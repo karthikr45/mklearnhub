@@ -19,31 +19,18 @@ function slugify(text: string): string {
 async function main() {
   console.warn('🌱 Seeding LearnHub database...')
 
-  // Clean slate (order matters for FKs)
-  await prisma.$transaction([
-    prisma.lessonProgress.deleteMany(),
-    prisma.enrollment.deleteMany(),
-    prisma.lesson.deleteMany(),
-    prisma.chapter.deleteMany(),
-    prisma.question.deleteMany(),
-    prisma.quizAttempt.deleteMany(),
-    prisma.quiz.deleteMany(),
-    prisma.article.deleteMany(),
-    prisma.articleVersion.deleteMany(),
-    prisma.manual.deleteMany(),
-    prisma.space.deleteMany(),
-    prisma.attendanceRecord.deleteMany(),
-    prisma.timetableSlot.deleteMany(),
-    prisma.batchStudent.deleteMany(),
-    prisma.batchCourse.deleteMany(),
-    prisma.batch.deleteMany(),
-    prisma.academicYear.deleteMany(),
-    prisma.course.deleteMany(),
-    prisma.portal.deleteMany(),
-    prisma.branch.deleteMany(),
-    prisma.user.deleteMany(),
-    prisma.organization.deleteMany(),
-  ])
+  // Clean slate: TRUNCATE every table with CASCADE so the reset is independent
+  // of the foreign-key graph (and stays correct as the schema grows).
+  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename FROM pg_tables
+    WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'
+  `
+  if (tables.length > 0) {
+    const list = tables.map((t) => `"public"."${t.tablename}"`).join(', ')
+    await prisma.$executeRawUnsafe(
+      `TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`,
+    )
+  }
 
   // ─── Super admin ─────────────────────────────────
   await prisma.user.create({
