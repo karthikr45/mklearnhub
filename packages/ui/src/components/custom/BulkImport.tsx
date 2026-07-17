@@ -73,7 +73,7 @@ function BulkImport({
   importType,
   templateColumns,
   onComplete,
-}: BulkImportProps): React.JSX.Element {
+}: BulkImportProps) {
   const [state, setState] = React.useState<ImportState>('idle')
   const [fileName, setFileName] = React.useState<string>('')
   const [rows, setRows] = React.useState<ParsedRow[]>([])

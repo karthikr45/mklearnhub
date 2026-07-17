@@ -228,7 +228,8 @@ export class ApiKeyService {
       errorRate: total > 0 ? errors / total : 0,
       topEndpoints: topEndpoints.map((e) => ({
         endpoint: e.endpoint,
-        count: e._count.endpoint,
+        count:
+          (e._count as { endpoint?: number } | undefined)?.endpoint ?? 0,
       })),
     }
   }

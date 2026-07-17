@@ -118,8 +118,16 @@ export default function SsoPage() {
       setMetadataXml(config.metadataXml)
       setSourceMode('manual')
     }
-    if (config.attributeMapping) {
-      setMapping((prev) => ({ ...prev, ...config.attributeMapping }))
+    const incoming = config.attributeMapping
+    if (incoming) {
+      setMapping((prev) => {
+        const next: Record<AttributeField, string> = { ...prev }
+        for (const field of ATTRIBUTE_FIELDS) {
+          const value = incoming[field]
+          if (typeof value === 'string') next[field] = value
+        }
+        return next
+      })
     }
     if (typeof config.autoProvision === 'boolean')
       setAutoProvision(config.autoProvision)

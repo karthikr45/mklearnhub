@@ -20,6 +20,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OrganizationsModule } from './modules/organizations/organizations.module'
 import { PublicApiModule } from './modules/public-api/public-api.module'
 import { ScormModule } from './modules/scorm/scorm.module'
+import { EnterpriseQueuesModule } from './queues/enterprise-queues.module'
 import { SchoolModule } from './modules/school/school.module'
 import { SearchModule } from './modules/search/search.module'
 import { SpacesModule } from './modules/spaces/spaces.module'
@@ -57,6 +58,7 @@ import { PrismaModule } from './prisma/prisma.module'
     BrandingModule,
     ApiGatewayModule,
     PublicApiModule,
+    EnterpriseQueuesModule.register(),
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
