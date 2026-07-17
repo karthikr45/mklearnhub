@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Turbo
+.turbo/
+
+# Prisma
+packages/db/generated/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Expo
+.expo/
+
+# Misc
+.DS_Store
+*.log
+.vercel

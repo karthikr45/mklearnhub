@@ -1,0 +1,776 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Organizations ───────────────────────────────────
+
+model Organization {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  type       OrgType  @default(BUSINESS)
+  logoUrl    String?
+  domain     String?  @unique
+  plan       Plan     @default(FREE)
+  isActive   Boolean  @default(true)
+  settings   Json     @default("{}")
+  maxUsers   Int      @default(5)
+  maxCourses Int      @default(5)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  users         User[]
+  portals       Portal[]
+  spaces        Space[]
+  courses       Course[]
+  batches       Batch[]
+  branches      Branch[]
+  subscriptions Subscription[]
+  invites       Invite[]
+
+  @@index([slug])
+  @@map("organizations")
+}
+
+model Branch {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String
+  address        String?
+  phone          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users        User[]
+  batches      Batch[]
+
+  @@index([organizationId])
+  @@map("branches")
+}
+
+// ─── Users & Auth ────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?
+  name           String
+  avatarUrl      String?
+  role           UserRole  @default(LEARNER)
+  organizationId String?
+  branchId       String?
+  isActive       Boolean   @default(true)
+  emailVerified  Boolean   @default(false)
+  onboarded      Boolean   @default(false)
+  timezone       String    @default("UTC")
+  locale         String    @default("en")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLoginAt    DateTime?
+
+  organization    Organization?          @relation(fields: [organizationId], references: [id])
+  branch          Branch?                @relation(fields: [branchId], references: [id])
+  sessions        Session[]
+  oauthAccounts   OAuthAccount[]
+  articles        Article[]              @relation("ArticleAuthor")
+  articleVersions ArticleVersion[]
+  enrollments     Enrollment[]
+  quizAttempts    QuizAttempt[]
+  assignments     AssignmentSubmission[]
+  certificates    Certificate[]
+  parentLinks     ParentStudentLink[]    @relation("ParentLink")
+  studentLinks    ParentStudentLink[]    @relation("StudentLink")
+  attendance      AttendanceRecord[]
+  grades          Grade[]
+  notifications   Notification[]
+  createdCourses  Course[]               @relation("CourseInstructor")
+  invitesSent     Invite[]
+  batchStudents   BatchStudent[]
+  lessonProgress  LessonProgress[]
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@map("sessions")
+}
+
+model OAuthAccount {
+  id             String    @id @default(cuid())
+  userId         String
+  provider       String
+  providerUserId String
+  accessToken    String?
+  refreshToken   String?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@map("oauth_accounts")
+}
+
+model Invite {
+  id             String    @id @default(cuid())
+  email          String
+  organizationId String
+  role           UserRole
+  invitedById    String
+  token          String    @unique @default(cuid())
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  invitedBy    User         @relation(fields: [invitedById], references: [id])
+
+  @@index([organizationId])
+  @@index([token])
+  @@map("invites")
+}
+
+// ─── Knowledge Base ───────────────────────────────────
+
+model Portal {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String
+  organizationId String
+  type           PortalType @default(INTERNAL)
+  logoUrl        String?
+  primaryColor   String?
+  customDomain   String?    @unique
+  isPublic       Boolean    @default(false)
+  isActive       Boolean    @default(true)
+  settings       Json       @default("{}")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  spaces       Space[]
+
+  @@unique([organizationId, slug])
+  @@map("portals")
+}
+
+model Space {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String
+  description    String?
+  organizationId String
+  portalId       String?
+  iconEmoji      String?
+  coverUrl       String?
+  isPublic       Boolean  @default(false)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  portal       Portal?      @relation(fields: [portalId], references: [id])
+  manuals      Manual[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("spaces")
+}
+
+model Manual {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  spaceId     String
+  order       Int       @default(0)
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  space    Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  articles Article[]
+
+  @@unique([spaceId, slug])
+  @@index([spaceId])
+  @@map("manuals")
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String
+  content     Json
+  excerpt     String?
+  manualId    String
+  authorId    String
+  status      ArticleStatus @default(DRAFT)
+  isPublic    Boolean       @default(false)
+  tags        String[]
+  views       Int           @default(0)
+  version     Int           @default(1)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  publishedAt DateTime?
+
+  manual   Manual           @relation(fields: [manualId], references: [id], onDelete: Cascade)
+  author   User             @relation("ArticleAuthor", fields: [authorId], references: [id])
+  versions ArticleVersion[]
+
+  @@unique([manualId, slug])
+  @@index([manualId])
+  @@index([authorId])
+  @@map("articles")
+}
+
+model ArticleVersion {
+  id         String   @id @default(cuid())
+  articleId  String
+  content    Json
+  version    Int
+  editedById String
+  createdAt  DateTime @default(now())
+
+  article  Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  editedBy User    @relation(fields: [editedById], references: [id])
+
+  @@index([articleId])
+  @@map("article_versions")
+}
+
+// ─── Courses & LMS ───────────────────────────────────
+
+model Course {
+  id              String       @id @default(cuid())
+  title           String
+  slug            String
+  description     String?
+  thumbnailUrl    String?
+  organizationId  String
+  instructorId    String
+  status          CourseStatus @default(DRAFT)
+  isPublic        Boolean      @default(false)
+  isFree          Boolean      @default(true)
+  price           Decimal?     @db.Decimal(10, 2)
+  currency        String       @default("USD")
+  tags            String[]
+  level           CourseLevel  @default(BEGINNER)
+  language        String       @default("en")
+  durationMins    Int          @default(0)
+  totalLessons    Int          @default(0)
+  enrollmentCount Int          @default(0)
+  rating          Decimal?     @db.Decimal(3, 2)
+  ratingCount     Int          @default(0)
+  settings        Json         @default("{}")
+  publishedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  instructor   User          @relation("CourseInstructor", fields: [instructorId], references: [id])
+  chapters     Chapter[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+  batchCourses BatchCourse[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([instructorId])
+  @@map("courses")
+}
+
+model Chapter {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  courseId    String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId])
+  @@map("chapters")
+}
+
+model Lesson {
+  id                String     @id @default(cuid())
+  title             String
+  description       String?
+  chapterId         String
+  type              LessonType @default(VIDEO)
+  content           Json?
+  videoUrl          String?
+  videoKey          String?
+  videoDurationSecs Int?
+  hlsUrl            String?
+  transcriptUrl     String?
+  order             Int        @default(0)
+  isFreePreview     Boolean    @default(false)
+  isPublished       Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  chapter  Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+  quiz     Quiz?
+
+  @@index([chapterId])
+  @@map("lessons")
+}
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  courseId     String
+  status       EnrollmentStatus @default(ENROLLED)
+  enrolledAt   DateTime         @default(now())
+  completedAt  DateTime?
+  expiresAt    DateTime?
+  progressPct  Int              @default(0)
+  lastAccessAt DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    LessonProgress[]
+  certificate Certificate?
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id           String    @id @default(cuid())
+  enrollmentId String
+  lessonId     String
+  userId       String
+  isCompleted  Boolean   @default(false)
+  watchedSecs  Int       @default(0)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([userId])
+  @@map("lesson_progress")
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  userId        String
+  courseId      String
+  enrollmentId  String   @unique
+  certificateNo String   @unique
+  issuedAt      DateTime @default(now())
+  pdfUrl        String?
+  verifyToken   String   @unique @default(cuid())
+
+  user       User       @relation(fields: [userId], references: [id])
+  course     Course     @relation(fields: [courseId], references: [id])
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+
+  @@index([userId])
+  @@map("certificates")
+}
+
+// ─── Assessments ─────────────────────────────────────
+
+model Quiz {
+  id               String   @id @default(cuid())
+  title            String
+  lessonId         String?  @unique
+  organizationId   String
+  passingScore     Int      @default(70)
+  timeLimitMins    Int?
+  maxAttempts      Int      @default(3)
+  shuffleQuestions Boolean  @default(false)
+  showAnswers      Boolean  @default(true)
+  isPublished      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  lesson    Lesson?       @relation(fields: [lessonId], references: [id])
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@index([organizationId])
+  @@map("quizzes")
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  quizId        String
+  type          QuestionType @default(MCQ)
+  text          String
+  explanation   String?
+  points        Int          @default(1)
+  order         Int          @default(0)
+  options       Json?
+  correctAnswer String?
+  createdAt     DateTime     @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("questions")
+}
+
+model QuizAttempt {
+  id            String    @id @default(cuid())
+  quizId        String
+  userId        String
+  answers       Json
+  score         Int
+  maxScore      Int
+  passed        Boolean
+  timeTakenSecs Int?
+  startedAt     DateTime  @default(now())
+  submittedAt   DateTime?
+
+  quiz Quiz @relation(fields: [quizId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([quizId])
+  @@index([userId])
+  @@map("quiz_attempts")
+}
+
+model Assignment {
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  organizationId String
+  dueDate        DateTime?
+  maxScore       Int       @default(100)
+  isPublished    Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  submissions AssignmentSubmission[]
+
+  @@index([organizationId])
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  content      String?
+  attachments  Json             @default("[]")
+  score        Int?
+  feedback     String?
+  status       SubmissionStatus @default(SUBMITTED)
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([assignmentId, userId])
+  @@index([userId])
+  @@map("assignment_submissions")
+}
+
+// ─── School Module ───────────────────────────────────
+
+model Batch {
+  id             String    @id @default(cuid())
+  name           String
+  organizationId String
+  branchId       String?
+  academicYearId String?
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  maxStudents    Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id])
+  branch       Branch?            @relation(fields: [branchId], references: [id])
+  academicYear AcademicYear?      @relation(fields: [academicYearId], references: [id])
+  students     BatchStudent[]
+  timetable    TimetableSlot[]
+  batchCourses BatchCourse[]
+  attendance   AttendanceRecord[]
+
+  @@index([organizationId])
+  @@map("batches")
+}
+
+model BatchStudent {
+  id       String   @id @default(cuid())
+  batchId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  batch Batch @relation(fields: [batchId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([batchId, userId])
+  @@map("batch_students")
+}
+
+model BatchCourse {
+  id       String @id @default(cuid())
+  batchId  String
+  courseId String
+
+  batch  Batch  @relation(fields: [batchId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([batchId, courseId])
+  @@map("batch_courses")
+}
+
+model AcademicYear {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  batches Batch[]
+  grades  Grade[]
+
+  @@index([organizationId])
+  @@map("academic_years")
+}
+
+model TimetableSlot {
+  id           String   @id @default(cuid())
+  batchId      String
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  subject      String
+  instructorId String?
+  room         String?
+  createdAt    DateTime @default(now())
+
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+  @@map("timetable_slots")
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  batchId    String
+  userId     String
+  date       DateTime         @db.Date
+  status     AttendanceStatus @default(PRESENT)
+  note       String?
+  markedById String?
+  createdAt  DateTime         @default(now())
+
+  batch Batch @relation(fields: [batchId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([batchId, userId, date])
+  @@index([batchId])
+  @@index([userId])
+  @@map("attendance_records")
+}
+
+model Grade {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  academicYearId String?
+  subject        String
+  score          Decimal  @db.Decimal(5, 2)
+  maxScore       Decimal  @db.Decimal(5, 2)
+  gradeLabel     String?
+  term           String?
+  remarks        String?
+  createdAt      DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id])
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
+
+  @@index([userId])
+  @@map("grades")
+}
+
+model ParentStudentLink {
+  id        String   @id @default(cuid())
+  parentId  String
+  studentId String
+  relation  String   @default("parent")
+  createdAt DateTime @default(now())
+
+  parent  User @relation("ParentLink", fields: [parentId], references: [id])
+  student User @relation("StudentLink", fields: [studentId], references: [id])
+
+  @@unique([parentId, studentId])
+  @@map("parent_student_links")
+}
+
+// ─── Notifications ───────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  data      Json      @default("{}")
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ─── Billing ─────────────────────────────────────────
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  plan               Plan
+  status             SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId   String?
+  stripeSubId        String?            @unique
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@map("subscriptions")
+}
+
+// ─── Enums ───────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  INSTRUCTOR
+  LEARNER
+  STUDENT
+  PARENT
+}
+
+enum OrgType {
+  BUSINESS
+  SCHOOL
+  INSTITUTE
+  COACHING_CENTER
+}
+
+enum Plan {
+  FREE
+  TEAMS
+  INSTITUTE
+  ENTERPRISE
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+  EMBED
+  SCORM
+  QUIZ
+  ASSIGNMENT
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  IN_PROGRESS
+  COMPLETED
+  DROPPED
+}
+
+enum PortalType {
+  INTERNAL
+  CUSTOMER
+  PARTNER
+  PUBLIC
+}
+
+enum QuestionType {
+  MCQ
+  MSQ
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}

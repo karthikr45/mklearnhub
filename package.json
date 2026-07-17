@@ -1,0 +1,41 @@
+{
+  "name": "learnhub",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @learnhub/db generate",
+    "db:migrate": "pnpm --filter @learnhub/db migrate:dev",
+    "db:push": "pnpm --filter @learnhub/db db:push",
+    "db:studio": "pnpm --filter @learnhub/db studio",
+    "db:seed": "pnpm --filter @learnhub/db seed",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "prettier": "^3.3.0",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "@nestjs/core",
+      "bcrypt",
+      "sharp"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@learnhub/config",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./typescript/base": "./typescript/base.json",
+    "./typescript/nextjs": "./typescript/nextjs.json",
+    "./eslint": "./eslint/index.js",
+    "./tailwind": "./tailwind/index.ts"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-tailwindcss": "^3.17.4"
+  }
+}
