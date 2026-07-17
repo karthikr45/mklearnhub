@@ -10,9 +10,11 @@ import { JwtService } from '@nestjs/jwt'
 import type { Prisma, User } from '@learnhub/db'
 import type { AuthTokens, AuthUser, JwtPayload } from '@learnhub/types'
 import { comparePassword, hashPassword, slugify } from '@learnhub/utils'
+import { validate as validatePassword } from '@learnhub/compliance'
 import { nanoid } from 'nanoid'
 
 import { PrismaService } from '../../prisma/prisma.service'
+import { AuditService } from '../audit/audit.service'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
@@ -34,6 +36,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
   ) {}
 
   private toAuthUser(user: User): AuthUser {
@@ -78,6 +81,11 @@ export class AuthService {
       where: { email: dto.email },
     })
     if (existing) throw new ConflictException('Email already registered')
+
+    const policy = validatePassword(dto.password)
+    if (!policy.valid) {
+      throw new BadRequestException(policy.errors.join('; '))
+    }
 
     const passwordHash = await hashPassword(dto.password)
     const userData: Prisma.UserCreateInput = {
@@ -137,6 +145,13 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
+    })
+    await this.audit.log({
+      action: 'user.login',
+      resource: 'User',
+      resourceId: user.id,
+      userId: user.id,
+      organizationId: user.organizationId,
     })
     return { user: this.toAuthUser(user), tokens }
   }

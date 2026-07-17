@@ -34,6 +34,15 @@ model Organization {
   subscriptions Subscription[]
   invites       Invite[]
 
+  ssoConfiguration   SsoConfiguration?
+  hrmsSyncs          HrmsSync[]
+  scormPackages      ScormPackage[]
+  apiKeys            ApiKey[]
+  webhooks           Webhook[]
+  brandingConfig     BrandingConfig?
+  dedicatedInstance  DedicatedInstance?
+  bulkImportJobs     BulkImportJob[]
+
   @@index([slug])
   @@map("organizations")
 }
@@ -95,6 +104,7 @@ model User {
   invitesSent     Invite[]
   batchStudents   BatchStudent[]
   lessonProgress  LessonProgress[]
+  scormTracking   ScormTracking[]
 
   @@index([organizationId])
   @@index([email])
@@ -335,9 +345,10 @@ model Lesson {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  chapter  Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  progress LessonProgress[]
-  quiz     Quiz?
+  chapter     Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progress    LessonProgress[]
+  quiz        Quiz?
+  lessonScorm LessonScorm?
 
   @@index([chapterId])
   @@map("lessons")
@@ -773,4 +784,423 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELED
   TRIALING
+}
+
+// ═══════════════════════════════════════════════════════
+// ENTERPRISE LAYER (Phase 2)
+// ═══════════════════════════════════════════════════════
+
+// ─── SSO & Identity ──────────────────────────────────────
+
+model SsoConfiguration {
+  id              String      @id @default(cuid())
+  organizationId  String      @unique
+  provider        SsoProvider
+  metadataUrl     String?
+  metadataXml     String?     @db.Text
+  entityId        String?
+  ssoUrl          String?
+  x509Certificate String?     @db.Text
+  attributeMap    Json        @default("{}")
+  isActive        Boolean     @default(false)
+  testEmail       String?
+  lastTestedAt    DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("sso_configurations")
+}
+
+model HrmsSync {
+  id             String       @id @default(cuid())
+  organizationId String
+  provider       HrmsProvider
+  webhookSecret  String
+  lastSyncAt     DateTime?
+  totalSynced    Int          @default(0)
+  totalFailed    Int          @default(0)
+  isActive       Boolean      @default(true)
+  fieldMapping   Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  syncLogs     HrmsSyncLog[]
+
+  @@map("hrms_syncs")
+}
+
+model HrmsSyncLog {
+  id          String     @id @default(cuid())
+  hrmsSyncId  String
+  event       String
+  payload     Json
+  status      SyncStatus @default(PENDING)
+  error       String?
+  processedAt DateTime?
+  createdAt   DateTime   @default(now())
+
+  hrmsSync HrmsSync @relation(fields: [hrmsSyncId], references: [id])
+
+  @@index([hrmsSyncId])
+  @@map("hrms_sync_logs")
+}
+
+// ─── SCORM / xAPI ────────────────────────────────────────
+
+model ScormPackage {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  version        ScormVersion @default(SCORM_2004)
+  s3Key          String
+  manifestPath   String
+  entryPoint     String
+  scoList        Json         @default("[]")
+  durationMins   Int?
+  isProcessed    Boolean      @default(false)
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  lessonScorms    LessonScorm[]
+  trackingRecords ScormTracking[]
+
+  @@index([organizationId])
+  @@map("scorm_packages")
+}
+
+model LessonScorm {
+  id             String @id @default(cuid())
+  lessonId       String @unique
+  scormPackageId String
+
+  lesson       Lesson       @relation(fields: [lessonId], references: [id])
+  scormPackage ScormPackage @relation(fields: [scormPackageId], references: [id])
+
+  @@map("lesson_scorms")
+}
+
+model ScormTracking {
+  id               String   @id @default(cuid())
+  userId           String
+  scormPackageId   String
+  scoId            String
+  completionStatus String   @default("unknown")
+  successStatus    String   @default("unknown")
+  score            Decimal? @db.Decimal(5, 2)
+  maxScore         Decimal? @db.Decimal(5, 2)
+  totalTime        String?
+  suspendData      String?  @db.Text
+  location         String?
+  sessionTime      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  scormPackage ScormPackage @relation(fields: [scormPackageId], references: [id])
+
+  @@unique([userId, scormPackageId, scoId])
+  @@index([userId])
+  @@map("scorm_tracking")
+}
+
+model XapiStatement {
+  id             String   @id @default(cuid())
+  statementId    String   @unique
+  organizationId String
+  actorEmail     String
+  verb           String
+  objectId       String
+  objectType     String
+  result         Json?
+  context        Json?
+  timestamp      DateTime
+  stored         DateTime @default(now())
+  rawStatement   Json
+
+  @@index([organizationId])
+  @@index([actorEmail])
+  @@map("xapi_statements")
+}
+
+// ─── Audit Logs ───────────────────────────────────────────
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  userId         String?
+  action         String
+  resource       String
+  resourceId     String?
+  oldValues      Json?
+  newValues      Json?
+  ipAddress      String?
+  userAgent      String?
+  sessionId      String?
+  status         String   @default("success")
+  errorMessage   String?
+  duration       Int?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+// ─── API Gateway ──────────────────────────────────────────
+
+model ApiKey {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  keyHash        String    @unique
+  keyPrefix      String
+  scopes         String[]
+  rateLimit      Int       @default(1000)
+  ratePeriod     String    @default("hour")
+  allowedIps     String[]
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  usageLogs    ApiKeyUsage[]
+
+  @@index([organizationId])
+  @@map("api_keys")
+}
+
+model ApiKeyUsage {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  endpoint   String
+  method     String
+  statusCode Int
+  duration   Int
+  createdAt  DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id])
+
+  @@index([apiKeyId, createdAt])
+  @@map("api_key_usage")
+}
+
+model Webhook {
+  id              String    @id @default(cuid())
+  organizationId  String
+  name            String
+  url             String
+  secret          String
+  events          String[]
+  isActive        Boolean   @default(true)
+  lastTriggeredAt DateTime?
+  failureCount    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  deliveries   WebhookDelivery[]
+
+  @@index([organizationId])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id          String                @id @default(cuid())
+  webhookId   String
+  event       String
+  payload     Json
+  statusCode  Int?
+  response    String?
+  attempts    Int                   @default(0)
+  nextRetryAt DateTime?
+  status      WebhookDeliveryStatus @default(PENDING)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  webhook Webhook @relation(fields: [webhookId], references: [id])
+
+  @@index([webhookId])
+  @@map("webhook_deliveries")
+}
+
+// ─── White-label & Branding ───────────────────────────────
+
+model BrandingConfig {
+  id                   String   @id @default(cuid())
+  organizationId       String   @unique
+  appName              String?
+  faviconUrl           String?
+  logoUrl              String?
+  logoDarkUrl          String?
+  primaryColor         String   @default("#6366F1")
+  secondaryColor       String   @default("#0EA5E9")
+  accentColor          String   @default("#F59E0B")
+  fontFamily           String   @default("Inter")
+  customCss            String?  @db.Text
+  customDomain         String?  @unique
+  sslCertStatus        String?
+  loginBgUrl           String?
+  loginBgColor         String?
+  footerText           String?
+  supportEmail         String?
+  hideLearnhubBranding Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("branding_configs")
+}
+
+// ─── Dedicated Instances ──────────────────────────────────
+
+model DedicatedInstance {
+  id             String         @id @default(cuid())
+  organizationId String         @unique
+  subdomain      String         @unique
+  customDomain   String?        @unique
+  dbUrl          String
+  s3Bucket       String
+  s3Prefix       String
+  region         String         @default("ap-south-1")
+  status         InstanceStatus @default(PROVISIONING)
+  tier           String         @default("standard")
+  provisionedAt  DateTime?
+  lastHealthAt   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("dedicated_instances")
+}
+
+// ─── Bulk Operations ──────────────────────────────────────
+
+model BulkImportJob {
+  id             String         @id @default(cuid())
+  organizationId String
+  type           BulkImportType
+  filename       String
+  s3Key          String
+  totalRows      Int            @default(0)
+  processedRows  Int            @default(0)
+  successRows    Int            @default(0)
+  failedRows     Int            @default(0)
+  errors         Json           @default("[]")
+  status         BulkJobStatus  @default(QUEUED)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdById    String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@map("bulk_import_jobs")
+}
+
+// ─── Compliance ───────────────────────────────────────────
+
+model DataSubjectRequest {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  type           DsrType
+  status         DsrStatus @default(PENDING)
+  requestedAt    DateTime  @default(now())
+  dueAt          DateTime
+  completedAt    DateTime?
+  notes          String?
+  exportUrl      String?
+  expiresAt      DateTime?
+
+  @@index([organizationId])
+  @@map("data_subject_requests")
+}
+
+// ─── New Enums ────────────────────────────────────────────
+
+enum SsoProvider {
+  SAML
+  AZURE_AD
+  OKTA
+  GOOGLE_WORKSPACE
+  LDAP
+}
+
+enum HrmsProvider {
+  SAP_SUCCESS_FACTORS
+  ORACLE_HCM
+  WORKDAY
+  DARWINBOX
+  ZOHO_PEOPLE
+  CUSTOM_WEBHOOK
+  CSV_SFTP
+}
+
+enum SyncStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+enum ScormVersion {
+  SCORM_12
+  SCORM_2004
+  XAPI
+  CMI5
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  RETRYING
+}
+
+enum InstanceStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  DECOMMISSIONED
+}
+
+enum BulkImportType {
+  USERS
+  ENROLLMENTS
+  GRADES
+  ATTENDANCE
+}
+
+enum BulkJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIALLY_COMPLETED
+}
+
+enum DsrType {
+  EXPORT
+  DELETE
+  RECTIFY
+}
+
+enum DsrStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
 }

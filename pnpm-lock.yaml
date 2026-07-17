@@ -99,6 +99,9 @@ importers:
       '@learnhub/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@learnhub/compliance':
+        specifier: workspace:*
+        version: link:../../packages/compliance
       '@learnhub/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -321,6 +324,15 @@ importers:
       '@learnhub/types':
         specifier: workspace:*
         version: link:../types
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
+  packages/compliance:
+    devDependencies:
+      '@learnhub/config':
+        specifier: workspace:*
+        version: link:../config
       typescript:
         specifier: ^5.5.0
         version: 5.9.3

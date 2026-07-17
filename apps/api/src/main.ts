@@ -8,6 +8,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { securityHeaders } from '@learnhub/compliance'
 
 import { AppModule } from './app.module'
 
@@ -24,6 +25,19 @@ async function bootstrap(): Promise<void> {
   await app.register(import('@fastify/helmet'), {
     contentSecurityPolicy: false,
   })
+
+  const extraHeaders = securityHeaders({
+    isProduction: config.get<string>('NODE_ENV') === 'production',
+  })
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onSend', (_req, reply, payload, done) => {
+      for (const [name, value] of Object.entries(extraHeaders)) {
+        reply.header(name, value)
+      }
+      done(null, payload)
+    })
 
   // CORS from a comma-separated whitelist (defaults to the frontend URL)
   const origins = (

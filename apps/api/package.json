@@ -19,6 +19,7 @@
     "@fastify/multipart": "^8.3.0",
     "@fastify/static": "^7.0.4",
     "@learnhub/ai": "workspace:*",
+    "@learnhub/compliance": "workspace:*",
     "@learnhub/db": "workspace:*",
     "@learnhub/email": "workspace:*",
     "@learnhub/types": "workspace:*",

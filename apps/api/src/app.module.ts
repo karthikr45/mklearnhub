@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { APP_GUARD } from '@nestjs/core'
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
@@ -8,6 +8,8 @@ import { validateEnv } from './config/env'
 import { HealthModule } from './health/health.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
 import { AssessmentsModule } from './modules/assessments/assessments.module'
+import { AuditInterceptor } from './modules/audit/audit.interceptor'
+import { AuditModule } from './modules/audit/audit.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BillingModule } from './modules/billing/billing.module'
 import { CoursesModule } from './modules/courses/courses.module'
@@ -29,6 +31,7 @@ import { PrismaModule } from './prisma/prisma.module'
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
+    AuditModule,
     HealthModule,
     AuthModule,
     OrganizationsModule,
@@ -43,6 +46,9 @@ import { PrismaModule } from './prisma/prisma.module'
     BillingModule,
     SearchModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+  ],
 })
 export class AppModule {}
