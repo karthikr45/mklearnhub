@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "LearnHub",
+    "slug": "learnhub",
+    "scheme": "learnhub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true },
+    "android": { "package": "com.learnhub.app" },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true }
+  }
+}

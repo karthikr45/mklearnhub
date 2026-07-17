@@ -1,3 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # apps/mobile (Expo) is excluded from the default install because React Native
+  # pulls a large native toolchain. To work on it: remove the exclusion below,
+  # run `pnpm install`, then `pnpm --filter @learnhub/mobile dev`.
+  - "!apps/mobile"

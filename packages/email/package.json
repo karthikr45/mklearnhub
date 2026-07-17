@@ -1,0 +1,29 @@
+{
+  "name": "@learnhub/email",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.25",
+    "@react-email/render": "^1.0.1",
+    "react": "^18.3.1",
+    "resend": "^4.0.0"
+  },
+  "devDependencies": {
+    "@learnhub/config": "workspace:*",
+    "@types/react": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}

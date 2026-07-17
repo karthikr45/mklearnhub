@@ -1,0 +1,9 @@
+{
+  "extends": "@learnhub/config/typescript/base",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

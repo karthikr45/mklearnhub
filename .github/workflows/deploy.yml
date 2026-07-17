@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Deploys run after CI passes. Configure the referenced secrets in your repo.
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy web to Vercel
+        run: echo "Configure VERCEL_TOKEN and run 'vercel deploy --prod' here."
+
+  deploy-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy API to Fly.io
+        run: echo "Configure FLY_API_TOKEN and run 'flyctl deploy' here."
+      - name: Run database migrations
+        run: echo "Run 'pnpm --filter @learnhub/db migrate:deploy' against production DATABASE_URL."
