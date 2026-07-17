@@ -35,6 +35,8 @@
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^6.2.1",
     "@nestjs/websockets": "^10.4.4",
+    "@node-saml/node-saml": "^5.0.0",
+    "adm-zip": "^0.5.16",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -49,15 +51,18 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.0",
     "stripe": "^17.2.0",
+    "xml2js": "^0.6.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@learnhub/config": "workspace:*",
     "@nestjs/cli": "^10.4.5",
     "@nestjs/schematics": "^10.1.4",
+    "@types/adm-zip": "^0.5.5",
     "@types/node": "^20.16.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-google-oauth20": "^2.0.16",
+    "@types/xml2js": "^0.4.14",
     "typescript": "^5.5.0",
     "vitest": "^2.1.2"
   }

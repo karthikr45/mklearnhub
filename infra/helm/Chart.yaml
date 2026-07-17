@@ -1,0 +1,13 @@
+apiVersion: v2
+name: learnhub
+description: LearnHub — knowledge base + LMS + school-management platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - lms
+  - learnhub
+  - education
+maintainers:
+  - name: LearnHub Platform Team
+    email: platform@learnhub.com

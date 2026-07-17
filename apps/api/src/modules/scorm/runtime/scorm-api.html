@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SCORM Runtime</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0b0d12;
+        font-family: system-ui, sans-serif;
+      }
+      #sco {
+        border: 0;
+        width: 100%;
+        height: 100vh;
+      }
+      #status {
+        position: fixed;
+        bottom: 8px;
+        right: 12px;
+        font-size: 12px;
+        color: #9aa4b2;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      SCORM API bridge. The LMS server substitutes {{PACKAGE_ID}} and
+      {{ENTRY_POINT}} before serving this file (it is a static shell, no build).
+      It exposes both the SCORM 1.2 (window.API) and SCORM 2004
+      (window.API_1484_11) global adapters that content players discover by
+      walking window.parent / window.opener. Every call is proxied to the LMS
+      RTE endpoint so tracking is persisted server-side.
+    -->
+    <iframe id="sco" title="SCORM content"></iframe>
+    <div id="status">initialising…</div>
+
+    <script>
+      (function () {
+        'use strict'
+
+        var PACKAGE_ID = '{{PACKAGE_ID}}'
+        var ENTRY_POINT = '{{ENTRY_POINT}}'
+        var SCO_ID = 'sco-1'
+        var TRACK_URL = '/api/v1/scorm/packages/' + PACKAGE_ID + '/track'
+
+        var lastError = '0'
+        var statusEl = document.getElementById('status')
+
+        function token() {
+          // Support both storage shapes used across the web app.
+          try {
+            var blob = localStorage.getItem('learnhub-auth')
+            if (blob) {
+              var parsed = JSON.parse(blob)
+              if (parsed && parsed.accessToken) return parsed.accessToken
+            }
+          } catch (e) {
+            /* ignore malformed blob */
+          }
+          return localStorage.getItem('accessToken') || ''
+        }
+
+        // Synchronous-looking bridge: SCORM APIs are specified as blocking, but
+        // browsers forbid sync XHR with auth headers. We use a synchronous
+        // XMLHttpRequest ONLY here (inside the runtime shell) so the content's
+        // GetValue/SetValue return a concrete value in the same tick.
+        function call(action, key, value) {
+          var payload = { scoId: SCO_ID, action: action }
+          if (key != null) payload.key = key
+          if (value != null) payload.value = value
+          try {
+            var xhr = new XMLHttpRequest()
+            xhr.open('POST', TRACK_URL, false) // synchronous
+            xhr.setRequestHeader('Content-Type', 'application/json')
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token())
+            xhr.send(JSON.stringify(payload))
+            if (xhr.status >= 200 && xhr.status < 300) {
+              lastError = '0'
+              return JSON.parse(xhr.responseText || '{}')
+            }
+            lastError = '101' // general exception
+          } catch (e) {
+            lastError = '101'
+          }
+          return {}
+        }
+
+        function setStatus(text) {
+          statusEl.textContent = text
+        }
+
+        // ─── SCORM 2004 adapter ───────────────────────────────
+        var API_1484_11 = {
+          Initialize: function () {
+            var r = call('Initialize')
+            setStatus('tracking (2004)')
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          Terminate: function () {
+            var r = call('Terminate')
+            setStatus('terminated')
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          GetValue: function (element) {
+            var r = call('GetValue', element)
+            return r.value != null ? r.value : ''
+          },
+          SetValue: function (element, val) {
+            var r = call('SetValue', element, val)
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          Commit: function () {
+            var r = call('Commit')
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          GetLastError: function () {
+            return lastError
+          },
+          GetErrorString: function (code) {
+            return code === '0' ? 'No error' : 'General exception'
+          },
+          GetDiagnostic: function (code) {
+            return String(code)
+          },
+        }
+
+        // ─── SCORM 1.2 adapter (LMS* method names) ────────────
+        var API = {
+          LMSInitialize: function () {
+            var r = call('LMSInitialize')
+            setStatus('tracking (1.2)')
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          LMSFinish: function () {
+            var r = call('LMSFinish')
+            setStatus('finished')
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          LMSGetValue: function (element) {
+            var r = call('LMSGetValue', element)
+            return r.value != null ? r.value : ''
+          },
+          LMSSetValue: function (element, val) {
+            var r = call('LMSSetValue', element, val)
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          LMSCommit: function () {
+            var r = call('LMSCommit')
+            return r.result === 'true' ? 'true' : 'false'
+          },
+          LMSGetLastError: function () {
+            return lastError
+          },
+          LMSGetErrorString: function (code) {
+            return code === '0' ? 'No error' : 'General exception'
+          },
+          LMSGetDiagnostic: function (code) {
+            return String(code)
+          },
+        }
+
+        // Publish the adapters where SCO players look for them.
+        window.API = API
+        window.API_1484_11 = API_1484_11
+
+        // Once the API is discoverable, load the actual SCO entry point.
+        document.getElementById('sco').src = ENTRY_POINT
+        setStatus('ready')
+      })()
+    </script>
+  </body>
+</html>

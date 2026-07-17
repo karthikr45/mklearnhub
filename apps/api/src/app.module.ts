@@ -7,17 +7,23 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { validateEnv } from './config/env'
 import { HealthModule } from './health/health.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
+import { ApiGatewayModule } from './modules/api-gateway/api-gateway.module'
 import { AssessmentsModule } from './modules/assessments/assessments.module'
 import { AuditInterceptor } from './modules/audit/audit.interceptor'
 import { AuditModule } from './modules/audit/audit.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BillingModule } from './modules/billing/billing.module'
+import { BrandingModule } from './modules/branding/branding.module'
 import { CoursesModule } from './modules/courses/courses.module'
+import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
+import { PublicApiModule } from './modules/public-api/public-api.module'
+import { ScormModule } from './modules/scorm/scorm.module'
 import { SchoolModule } from './modules/school/school.module'
 import { SearchModule } from './modules/search/search.module'
 import { SpacesModule } from './modules/spaces/spaces.module'
+import { SsoModule } from './modules/sso/sso.module'
 import { StorageModule } from './modules/storage/storage.module'
 import { VideoModule } from './modules/video/video.module'
 import { PrismaModule } from './prisma/prisma.module'
@@ -45,6 +51,12 @@ import { PrismaModule } from './prisma/prisma.module'
     NotificationsModule,
     BillingModule,
     SearchModule,
+    SsoModule,
+    HrmsModule,
+    ScormModule,
+    BrandingModule,
+    ApiGatewayModule,
+    PublicApiModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

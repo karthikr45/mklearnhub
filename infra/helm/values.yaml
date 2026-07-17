@@ -1,0 +1,128 @@
+# Default values for the LearnHub chart.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Container images per app. Override tags in your environment values file.
+images:
+  api:
+    repository: ghcr.io/learnhub/api
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  web:
+    repository: ghcr.io/learnhub/web
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  admin:
+    repository: ghcr.io/learnhub/admin
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Default replica counts (api is also HPA-managed — see autoscaling).
+replicaCount:
+  api: 2
+  web: 2
+  admin: 1
+
+resources:
+  api:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  web:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  admin:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+service:
+  type: ClusterIP
+  ports:
+    api: 3001
+    web: 3000
+    admin: 3002
+
+ingress:
+  enabled: true
+  className: nginx
+  host: app.learnhub.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "512m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  tls:
+    enabled: true
+    secretName: learnhub-tls
+
+# Non-secret configuration → rendered into a ConfigMap and injected via envFrom.
+config:
+  NODE_ENV: production
+  ENABLE_QUEUES: "true"
+  ENABLE_SEARCH: "true"
+  JWT_EXPIRES_IN: 15m
+  JWT_REFRESH_EXPIRES_IN: 7d
+  FRONTEND_URL: https://app.learnhub.com
+  APP_URL: https://app.learnhub.com/api
+
+# Backing-service connection settings (host/port only; credentials go in secrets).
+postgres:
+  host: learnhub-postgres
+  port: 5432
+  database: learnhub_db
+redis:
+  host: learnhub-redis
+  port: 6379
+elasticsearch:
+  url: http://learnhub-elasticsearch:9200
+
+# Secret values → rendered (base64) into a Secret and injected via envFrom.
+# In production supply these from an external secret manager (see README) and
+# set `secrets.create: false`.
+secrets:
+  create: true
+  values:
+    DATABASE_URL: "postgresql://learnhub:changeme@learnhub-postgres:5432/learnhub_db"
+    REDIS_URL: "redis://learnhub-redis:6379"
+    JWT_SECRET: "change-me-access-secret"
+    JWT_REFRESH_SECRET: "change-me-refresh-secret"
+    ENCRYPTION_KEY: ""            # 32-byte hex: openssl rand -hex 32
+    WEBHOOK_SIGNING_KEY: ""
+    ANTHROPIC_API_KEY: ""
+    RESEND_API_KEY: ""
+    AWS_ACCESS_KEY_ID: ""
+    AWS_SECRET_ACCESS_KEY: ""
+    AWS_BUCKET_NAME: "learnhub-media"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+probes:
+  api:
+    readinessPath: /api/v1/health
+    livenessPath: /api/v1/health
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
