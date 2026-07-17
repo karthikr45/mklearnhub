@@ -13,6 +13,7 @@
     "db:push": "pnpm --filter @learnhub/db db:push",
     "db:studio": "pnpm --filter @learnhub/db studio",
     "db:seed": "pnpm --filter @learnhub/db seed",
+    "setup:local": "cp -n packages/db/.env.example packages/db/.env; cp -n apps/api/.env.example apps/api/.env; cp -n apps/web/.env.local.example apps/web/.env.local; cp -n apps/admin/.env.local.example apps/admin/.env.local; echo '✅ Env files created. Next: start Postgres (docker compose up -d), then: pnpm db:migrate && pnpm db:seed && pnpm dev'",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {
