@@ -28,10 +28,15 @@ interface Portal {
   isPublic: boolean
   pageJson: Data | null
   primaryColor?: string | null
+  logoUrl?: string | null
   organization?: { slug: string }
 }
 
-type BuilderData = PortalMetadata & { branding?: BrandingInput | null }
+type BuilderData = PortalMetadata & {
+  branding?:
+    | (BrandingInput & { appName?: string | null; logoUrl?: string | null })
+    | null
+}
 
 export default function PortalBuilderPage() {
   const params = useParams()
@@ -133,7 +138,12 @@ export default function PortalBuilderPage() {
       >
         <PortalEditor
           initialData={portal.pageJson ?? emptyPortalData}
-          metadata={meta ?? { courses: [], articles: [] }}
+          metadata={{
+            courses: meta?.courses ?? [],
+            articles: meta?.articles ?? [],
+            logoUrl: portal.logoUrl ?? meta?.branding?.logoUrl ?? null,
+            appName: meta?.branding?.appName ?? portal.name,
+          }}
           onPublish={savePage}
         />
       </div>

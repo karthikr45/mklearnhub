@@ -1,4 +1,5 @@
 import type { Data } from '@measured/puck'
+import type { Metadata } from 'next'
 import { Render } from '@measured/puck/rsc'
 
 import { brandingStyle, type BrandingInput } from '@/lib/branding-style'
@@ -7,7 +8,9 @@ import { portalConfig, type PortalMetadata } from '@/lib/puck.config'
 export interface PublicPortalPayload {
   portal: { name: string; logoUrl?: string | null; primaryColor?: string | null }
   pageJson: Data | null
-  branding?: BrandingInput | null
+  branding?:
+    | (BrandingInput & { appName?: string | null; logoUrl?: string | null })
+    | null
   courses: PortalMetadata['courses']
   articles: PortalMetadata['articles']
 }
@@ -25,12 +28,31 @@ export async function fetchPortal(
   }
 }
 
+/** Build SEO metadata for a portal (used by each route's generateMetadata). */
+export function portalSeo(
+  data: PublicPortalPayload | null,
+  fallbackTitle = 'Portal',
+): Metadata {
+  const name = data?.portal.name ?? fallbackTitle
+  const description = data?.branding?.appName
+    ? `${name} — ${data.branding.appName}`
+    : `${name}`
+  return {
+    title: name,
+    description,
+    openGraph: { title: name, description, type: 'website' },
+    twitter: { card: 'summary', title: name, description },
+  }
+}
+
 /** Server component that renders a portal's Puck document with live data. */
 export function PortalDocument({ data }: { data: PublicPortalPayload }) {
   const pageData: Data = data.pageJson ?? { content: [], root: {} }
   const metadata: PortalMetadata = {
     courses: data.courses ?? [],
     articles: data.articles ?? [],
+    logoUrl: data.portal.logoUrl ?? data.branding?.logoUrl ?? null,
+    appName: data.branding?.appName ?? data.portal.name,
   }
   // Portal-level colour overrides the org branding; org branding supplies the
   // rest (secondary/accent/font). Falls back to the default theme.

@@ -19,12 +19,19 @@ export interface PortalArticle {
 export interface PortalMetadata {
   courses: PortalCourse[]
   articles: PortalArticle[]
+  logoUrl?: string | null
+  appName?: string | null
   [key: string]: unknown
 }
 
 function meta(puck: { metadata?: Record<string, unknown> }): PortalMetadata {
   const m = (puck.metadata ?? {}) as Partial<PortalMetadata>
-  return { courses: m.courses ?? [], articles: m.articles ?? [] }
+  return {
+    courses: m.courses ?? [],
+    articles: m.articles ?? [],
+    logoUrl: m.logoUrl ?? null,
+    appName: m.appName ?? null,
+  }
 }
 
 export const portalConfig: Config = {
@@ -34,6 +41,47 @@ export const portalConfig: Config = {
     ),
   },
   components: {
+    Header: {
+      label: 'Header (logo + nav)',
+      fields: {
+        logoUrl: { type: 'text' },
+        title: { type: 'text' },
+        links: {
+          type: 'array',
+          arrayFields: { label: { type: 'text' }, url: { type: 'text' } },
+          defaultItemProps: { label: 'Link', url: '#' },
+        },
+      },
+      defaultProps: { logoUrl: '', title: '', links: [] },
+      render: ({ logoUrl, title, links, puck }) => {
+        const m = meta(puck)
+        const logo = logoUrl || m.logoUrl || ''
+        const name = title || m.appName || ''
+        const nav = Array.isArray(links) ? links : []
+        return (
+          <header className="flex items-center justify-between border-b py-4">
+            <div className="flex items-center gap-3">
+              {logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={String(logo)} alt={String(name)} className="h-8 w-auto" />
+              ) : null}
+              {name ? <span className="text-lg font-bold">{name}</span> : null}
+            </div>
+            <nav className="flex items-center gap-4 text-sm">
+              {nav.map((l: { label?: string; url?: string }, i: number) => (
+                <a
+                  key={i}
+                  href={l.url || '#'}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+          </header>
+        )
+      },
+    },
     Hero: {
       label: 'Hero',
       fields: {
