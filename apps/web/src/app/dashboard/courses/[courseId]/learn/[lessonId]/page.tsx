@@ -1,12 +1,15 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { CheckCircle2, FileText, Loader2, Play } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, FileText, Loader2, Play, Upload } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { VideoPlayer } from '@/components/courses/VideoPlayer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/store'
 
 interface LearnLesson {
   id: string
@@ -85,6 +88,39 @@ export default function LessonPlayerPage() {
   const params = useParams<{ courseId: string; lessonId: string }>()
   const { courseId, lessonId } = params
   const router = useRouter()
+  const qc = useQueryClient()
+  const role = useAuthStore((s) => s.user?.role)
+  const canEdit =
+    role === 'INSTRUCTOR' || role === 'ORG_ADMIN' || role === 'SUPER_ADMIN'
+  const [videoUrl, setVideoUrl] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const attachUrl = useMutation({
+    mutationFn: async (url: string) => {
+      await api.post(`/video/lessons/${lessonId}/url`, { videoUrl: url })
+    },
+    onSuccess: () => {
+      setVideoUrl('')
+      qc.invalidateQueries({ queryKey: ['course-detail', courseId] })
+      toast.success('Video attached')
+    },
+    onError: () => toast.error('Could not attach video (instructor only)'),
+  })
+
+  const uploadFile = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      await api.post(`/video/lessons/${lessonId}/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['course-detail', courseId] })
+      toast.success('Video uploaded')
+    },
+    onError: () => toast.error('Upload failed'),
+  })
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course-detail', courseId],
@@ -145,14 +181,57 @@ export default function LessonPlayerPage() {
         <div>
           <div className="rounded-lg border bg-card p-4">
             {currentLesson.videoUrl ? (
-              <video
-                controls
-                src={currentLesson.videoUrl}
-                className="w-full rounded-lg"
-              />
+              <VideoPlayer src={currentLesson.videoUrl} />
             ) : (
               renderContent(currentLesson.content)
             )}
+
+            {canEdit ? (
+              <div className="mt-4 space-y-2 border-t pt-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {currentLesson.videoUrl ? 'Replace video' : 'Add a video'}
+                </p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    if (videoUrl.trim()) attachUrl.mutate(videoUrl.trim())
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="Paste an mp4, .m3u8 (HLS), or YouTube URL"
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={attachUrl.isPending}
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    Attach
+                  </button>
+                </form>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) uploadFile.mutate(f)
+                  }}
+                />
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploadFile.isPending}
+                  className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploadFile.isPending ? 'Uploading…' : 'Upload a file'}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <button

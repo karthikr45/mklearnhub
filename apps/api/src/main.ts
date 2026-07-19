@@ -11,6 +11,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { securityHeaders } from '@learnhub/compliance'
 
 import { AppModule } from './app.module'
+import { ensureUploadDir, UPLOAD_DIR } from './config/uploads'
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -24,6 +25,17 @@ async function bootstrap(): Promise<void> {
   // Security headers
   await app.register(import('@fastify/helmet'), {
     contentSecurityPolicy: false,
+  })
+
+  // Local media storage: accept uploads and serve them at /uploads/*.
+  ensureUploadDir()
+  await app.register(import('@fastify/multipart'), {
+    limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB
+  })
+  await app.register(import('@fastify/static'), {
+    root: UPLOAD_DIR,
+    prefix: '/uploads/',
+    decorateReply: false,
   })
 
   const extraHeaders = securityHeaders({

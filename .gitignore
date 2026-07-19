@@ -27,6 +27,9 @@ coverage/
 # Expo
 .expo/
 
+# Uploaded media (local dev)
+apps/api/uploads/
+
 # Misc
 .DS_Store
 *.log
