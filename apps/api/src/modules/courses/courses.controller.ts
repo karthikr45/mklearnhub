@@ -51,6 +51,11 @@ export class CoursesController {
     return this.courses.getEnrollments(user.sub)
   }
 
+  @Get('me/certificates')
+  getMyCertificates(@CurrentUser() user: JwtPayload) {
+    return this.courses.getMyCertificates(user.sub)
+  }
+
   @Post(':courseId/chapters')
   addChapter(
     @Param('courseId') courseId: string,

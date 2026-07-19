@@ -15,6 +15,64 @@ import { TimetableSlotDto } from './dto/create-timetable.dto'
 export class SchoolService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getStudentOverview(userId: string) {
+    const memberships = await this.prisma.batchStudent.findMany({
+      where: { userId },
+      include: {
+        batch: {
+          include: {
+            timetable: {
+              orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+            },
+            academicYear: true,
+            branch: { select: { name: true } },
+          },
+        },
+      },
+    })
+
+    const batches = memberships.map((m) => ({
+      id: m.batch.id,
+      name: m.batch.name,
+      timetable: m.batch.timetable,
+      academicYear: m.batch.academicYear,
+      branchName: m.batch.branch?.name ?? null,
+    }))
+
+    const grades = await this.prisma.grade.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const grouped = await this.prisma.attendanceRecord.groupBy({
+      by: ['status'],
+      where: { userId },
+      _count: { _all: true },
+    })
+    const counts = grouped.reduce<Record<string, number>>((acc, g) => {
+      acc[g.status] = g._count._all
+      return acc
+    }, {})
+    const present = counts.PRESENT ?? 0
+    const absent = counts.ABSENT ?? 0
+    const late = counts.LATE ?? 0
+    const excused = counts.EXCUSED ?? 0
+    const total = present + absent + late + excused
+
+    return {
+      batches,
+      grades,
+      attendance: {
+        present,
+        absent,
+        late,
+        excused,
+        total,
+        rate: total ? Math.round((present / total) * 100) : 0,
+      },
+    }
+  }
+
   async createBatch(orgId: string, dto: CreateBatchDto) {
     return this.prisma.batch.create({
       data: {

@@ -33,6 +33,11 @@ export class SchoolController {
     return user.orgId
   }
 
+  @Get('me/overview')
+  getStudentOverview(@CurrentUser() user: JwtPayload) {
+    return this.school.getStudentOverview(user.sub)
+  }
+
   @Post('batches')
   createBatch(@Body() dto: CreateBatchDto, @CurrentUser() user: JwtPayload) {
     return this.school.createBatch(this.orgId(user), dto)

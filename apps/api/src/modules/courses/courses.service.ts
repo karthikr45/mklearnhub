@@ -225,6 +225,21 @@ export class CoursesService {
     })
   }
 
+  async getMyCertificates(userId: string) {
+    const certificates = await this.prisma.certificate.findMany({
+      where: { userId },
+      orderBy: { issuedAt: 'desc' },
+      include: { course: { select: { id: true, title: true } } },
+    })
+    return certificates.map((c) => ({
+      id: c.id,
+      certificateNo: c.certificateNo,
+      issuedAt: c.issuedAt,
+      pdfUrl: c.pdfUrl,
+      course: c.course,
+    }))
+  }
+
   getUploadUrl(key: string) {
     // Real presigning lives in StorageService; this is a stub for wiring.
     return { note: 'configure storage', key }

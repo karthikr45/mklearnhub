@@ -82,6 +82,22 @@ export class OrganizationsService {
     return { success: true }
   }
 
+  async getInviteByToken(token: string) {
+    const invite = await this.prisma.invite.findUnique({
+      where: { token },
+      include: { organization: { select: { name: true, slug: true } } },
+    })
+    if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
+      return { valid: false as const }
+    }
+    return {
+      valid: true as const,
+      email: invite.email,
+      role: invite.role,
+      organizationName: invite.organization.name,
+    }
+  }
+
   async getMembers(orgId: string, page = 1, pageSize = 20) {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
