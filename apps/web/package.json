@@ -12,6 +12,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@learnhub/types": "workspace:*",
+    "@measured/puck": "^0.19.0",
     "@learnhub/ui": "workspace:*",
     "@learnhub/utils": "workspace:*",
     "@tanstack/react-query": "^5.59.0",
