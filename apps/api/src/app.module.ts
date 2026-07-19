@@ -19,6 +19,7 @@ import { CoursesModule } from './modules/courses/courses.module'
 import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
+import { PortalsModule } from './modules/portals/portals.module'
 import { PublicApiModule } from './modules/public-api/public-api.module'
 import { ScormModule } from './modules/scorm/scorm.module'
 import { EnterpriseQueuesModule } from './queues/enterprise-queues.module'
@@ -60,6 +61,7 @@ import { PrismaModule } from './prisma/prisma.module'
     BrandingModule,
     ApiGatewayModule,
     PublicApiModule,
+    PortalsModule,
     EnterpriseQueuesModule.register(),
   ],
   providers: [
