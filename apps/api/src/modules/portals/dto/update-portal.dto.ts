@@ -28,4 +28,9 @@ export class UpdatePortalDto {
   @IsOptional()
   @IsString()
   logoUrl?: string
+
+  @ApiPropertyOptional({ example: 'help.acme.com' })
+  @IsOptional()
+  @IsString()
+  customDomain?: string
 }

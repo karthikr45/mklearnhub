@@ -23,8 +23,10 @@ const PortalEditor = dynamic(
 interface Portal {
   id: string
   name: string
+  slug: string
   isPublic: boolean
   pageJson: Data | null
+  organization?: { slug: string }
 }
 
 export default function PortalBuilderPage() {
@@ -91,7 +93,11 @@ export default function PortalBuilderPage() {
         <div className="flex items-center gap-3">
           {portal.isPublic ? (
             <a
-              href={`/p/${portalId}`}
+              href={
+                portal.organization
+                  ? `/portal/${portal.organization.slug}/${portal.slug}`
+                  : `/p/${portalId}`
+              }
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

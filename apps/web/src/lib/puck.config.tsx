@@ -182,7 +182,205 @@ export const portalConfig: Config = {
         )
       },
     },
+    FAQ: {
+      label: 'FAQ',
+      fields: {
+        title: { type: 'text' },
+        items: {
+          type: 'array',
+          arrayFields: {
+            question: { type: 'text' },
+            answer: { type: 'textarea' },
+          },
+          defaultItemProps: { question: 'Question?', answer: 'Answer.' },
+        },
+      },
+      defaultProps: {
+        title: 'Frequently asked questions',
+        items: [
+          { question: 'How do I get started?', answer: 'Sign in and explore.' },
+        ],
+      },
+      render: ({ title, items }) => {
+        const list = Array.isArray(items) ? items : []
+        return (
+          <section className="py-10">
+            <h2 className="mb-4 text-2xl font-semibold">{title}</h2>
+            <div className="space-y-3">
+              {list.map(
+                (it: { question?: string; answer?: string }, i: number) => (
+                  <details key={i} className="rounded-lg border bg-card p-4">
+                    <summary className="cursor-pointer font-medium">
+                      {it.question}
+                    </summary>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {it.answer}
+                    </p>
+                  </details>
+                ),
+              )}
+            </div>
+          </section>
+        )
+      },
+    },
+
+    Testimonials: {
+      label: 'Testimonials',
+      fields: {
+        title: { type: 'text' },
+        items: {
+          type: 'array',
+          arrayFields: {
+            quote: { type: 'textarea' },
+            author: { type: 'text' },
+            role: { type: 'text' },
+          },
+          defaultItemProps: {
+            quote: 'This platform changed how we learn.',
+            author: 'Jane Doe',
+            role: 'Learner',
+          },
+        },
+      },
+      defaultProps: {
+        title: 'What people say',
+        items: [
+          {
+            quote: 'This platform changed how we learn.',
+            author: 'Jane Doe',
+            role: 'Learner',
+          },
+        ],
+      },
+      render: ({ title, items }) => {
+        const list = Array.isArray(items) ? items : []
+        return (
+          <section className="py-10">
+            <h2 className="mb-4 text-2xl font-semibold">{title}</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {list.map(
+                (
+                  t: { quote?: string; author?: string; role?: string },
+                  i: number,
+                ) => (
+                  <figure key={i} className="rounded-lg border bg-card p-6">
+                    <blockquote className="text-sm italic">
+                      “{t.quote}”
+                    </blockquote>
+                    <figcaption className="mt-3 text-sm font-medium">
+                      {t.author}
+                      {t.role ? (
+                        <span className="text-muted-foreground">
+                          {' '}
+                          · {t.role}
+                        </span>
+                      ) : null}
+                    </figcaption>
+                  </figure>
+                ),
+              )}
+            </div>
+          </section>
+        )
+      },
+    },
+
+    Video: {
+      label: 'Video embed',
+      fields: {
+        title: { type: 'text' },
+        url: { type: 'text' },
+      },
+      defaultProps: { title: '', url: '' },
+      // Only well-known embed hosts are turned into an iframe; anything else
+      // renders as a plain link (never an arbitrary iframe src).
+      render: ({ title, url }) => {
+        const embed = toEmbedUrl(String(url ?? ''))
+        return (
+          <section className="py-10">
+            {title ? (
+              <h2 className="mb-4 text-2xl font-semibold">{title}</h2>
+            ) : null}
+            {embed ? (
+              <div className="relative w-full overflow-hidden rounded-lg pt-[56.25%]">
+                <iframe
+                  src={embed}
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={title || 'Video'}
+                />
+              </div>
+            ) : url ? (
+              <a
+                href={String(url)}
+                className="text-primary underline"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Watch video
+              </a>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Add a YouTube or Vimeo URL.
+              </p>
+            )}
+          </section>
+        )
+      },
+    },
+
+    Image: {
+      label: 'Image',
+      fields: {
+        src: { type: 'text' },
+        alt: { type: 'text' },
+        caption: { type: 'text' },
+      },
+      defaultProps: { src: '', alt: '', caption: '' },
+      render: ({ src, alt, caption }) =>
+        src ? (
+          <figure className="py-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={String(src)}
+              alt={String(alt ?? '')}
+              className="mx-auto max-h-[480px] w-full rounded-lg object-cover"
+            />
+            {caption ? (
+              <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+                {caption}
+              </figcaption>
+            ) : null}
+          </figure>
+        ) : (
+          <div className="my-8 rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+            Add an image URL.
+          </div>
+        ),
+    },
   },
+}
+
+/** Turn a YouTube/Vimeo watch URL into an embeddable URL, or null. */
+function toEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./, '')
+    if (host === 'youtube.com' && u.searchParams.get('v')) {
+      return `https://www.youtube.com/embed/${u.searchParams.get('v')}`
+    }
+    if (host === 'youtu.be') {
+      return `https://www.youtube.com/embed${u.pathname}`
+    }
+    if (host === 'vimeo.com') {
+      return `https://player.vimeo.com/video${u.pathname}`
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 export const emptyPortalData: Data = { content: [], root: {} }

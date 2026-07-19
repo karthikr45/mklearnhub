@@ -34,8 +34,13 @@ export function middleware(request: NextRequest): NextResponse {
         requestHeaders.set('x-org-slug', subdomain)
       }
     } else {
-      // Custom domain: production would look up branding + handle SSO redirect.
+      // Custom domain: serve the portal bound to this domain at the site root.
       requestHeaders.set('x-custom-domain', hostname)
+      if (request.nextUrl.pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = `/portal-site/${hostname}`
+        return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+      }
     }
   }
 

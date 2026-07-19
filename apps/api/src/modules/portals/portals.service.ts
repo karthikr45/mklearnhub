@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import type { Prisma } from '@learnhub/db'
 import { slugify } from '@learnhub/utils'
 import { nanoid } from 'nanoid'
@@ -23,6 +19,7 @@ export class PortalsService {
         organizationId: orgId,
         ...(dto.type ? { type: dto.type } : {}),
       },
+      include: { organization: { select: { slug: true } } },
     })
   }
 
@@ -30,12 +27,14 @@ export class PortalsService {
     return this.prisma.portal.findMany({
       where: { organizationId: orgId },
       orderBy: { createdAt: 'desc' },
+      include: { organization: { select: { slug: true } } },
     })
   }
 
   async getOne(id: string, orgId: string) {
     const portal = await this.prisma.portal.findFirst({
       where: { id, organizationId: orgId },
+      include: { organization: { select: { slug: true } } },
     })
     if (!portal) throw new NotFoundException('Portal not found')
     return portal
@@ -52,6 +51,9 @@ export class PortalsService {
           ? { primaryColor: dto.primaryColor }
           : {}),
         ...(dto.logoUrl !== undefined ? { logoUrl: dto.logoUrl } : {}),
+        ...(dto.customDomain !== undefined
+          ? { customDomain: dto.customDomain || null }
+          : {}),
       },
     })
   }
@@ -112,9 +114,9 @@ export class PortalsService {
     return this.orgContent(orgId)
   }
 
-  /** Public payload for rendering a portal — only if it is published. */
-  async getPublic(id: string) {
-    const portal = await this.prisma.portal.findUnique({ where: { id } })
+  private async buildPublicPayload(
+    portal: Prisma.PortalGetPayload<object> | null,
+  ) {
     if (!portal || !portal.isPublic || !portal.isActive) {
       throw new NotFoundException('Portal not found')
     }
@@ -122,7 +124,6 @@ export class PortalsService {
       where: { organizationId: portal.organizationId },
     })
     const { courses, articles } = await this.orgContent(portal.organizationId)
-    if (!portal.isPublic) throw new ForbiddenException()
     return {
       portal: {
         id: portal.id,
@@ -145,5 +146,32 @@ export class PortalsService {
       courses,
       articles,
     }
+  }
+
+  /** Public render payload by portal id — only if published. */
+  async getPublic(id: string) {
+    const portal = await this.prisma.portal.findUnique({ where: { id } })
+    return this.buildPublicPayload(portal)
+  }
+
+  /** Public render payload by org slug + portal slug. */
+  async getPublicBySlug(orgSlug: string, portalSlug: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { slug: orgSlug },
+      select: { id: true },
+    })
+    if (!org) throw new NotFoundException('Portal not found')
+    const portal = await this.prisma.portal.findFirst({
+      where: { organizationId: org.id, slug: portalSlug },
+    })
+    return this.buildPublicPayload(portal)
+  }
+
+  /** Public render payload resolved from a custom domain. */
+  async getPublicByDomain(domain: string) {
+    const portal = await this.prisma.portal.findUnique({
+      where: { customDomain: domain },
+    })
+    return this.buildPublicPayload(portal)
   }
 }

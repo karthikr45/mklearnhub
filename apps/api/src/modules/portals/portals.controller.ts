@@ -33,6 +33,19 @@ export class PortalsController {
   }
 
   // ─── Public (no auth) ──────────────────────────────
+  @Get('public/by-slug/:orgSlug/:portalSlug')
+  getPublicBySlug(
+    @Param('orgSlug') orgSlug: string,
+    @Param('portalSlug') portalSlug: string,
+  ) {
+    return this.portals.getPublicBySlug(orgSlug, portalSlug)
+  }
+
+  @Get('public/by-domain/:domain')
+  getPublicByDomain(@Param('domain') domain: string) {
+    return this.portals.getPublicByDomain(domain)
+  }
+
   @Get('public/:id')
   getPublic(@Param('id') id: string) {
     return this.portals.getPublic(id)

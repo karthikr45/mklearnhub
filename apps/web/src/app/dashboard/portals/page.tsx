@@ -15,6 +15,13 @@ interface Portal {
   slug: string
   isPublic: boolean
   type: string
+  organization?: { slug: string }
+}
+
+function publicUrl(p: Portal): string {
+  return p.organization
+    ? `/portal/${p.organization.slug}/${p.slug}`
+    : `/p/${p.id}`
 }
 
 export default function PortalsPage() {
@@ -107,7 +114,7 @@ export default function PortalsPage() {
                 </Link>
                 {p.isPublic ? (
                   <a
-                    href={`/p/${p.id}`}
+                    href={publicUrl(p)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
