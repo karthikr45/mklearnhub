@@ -38,6 +38,21 @@ export class SchoolController {
     return this.school.createBatch(this.orgId(user), dto)
   }
 
+  @Get('batches')
+  listBatches(@CurrentUser() user: JwtPayload) {
+    return this.school.listBatches(this.orgId(user))
+  }
+
+  @Get('batches/:batchId')
+  getBatch(@Param('batchId') batchId: string) {
+    return this.school.getBatch(batchId)
+  }
+
+  @Get('batches/:batchId/timetable')
+  getTimetable(@Param('batchId') batchId: string) {
+    return this.school.getTimetable(batchId)
+  }
+
   @Post('batches/:batchId/students')
   addStudents(
     @Param('batchId') batchId: string,

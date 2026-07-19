@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
 import { validateEnv } from './config/env'
 import { HealthModule } from './health/health.module'
+import { AdminModule } from './modules/admin/admin.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
 import { ApiGatewayModule } from './modules/api-gateway/api-gateway.module'
 import { AssessmentsModule } from './modules/assessments/assessments.module'
@@ -41,6 +42,7 @@ import { PrismaModule } from './prisma/prisma.module'
     AuditModule,
     HealthModule,
     AuthModule,
+    AdminModule,
     OrganizationsModule,
     SpacesModule,
     CoursesModule,

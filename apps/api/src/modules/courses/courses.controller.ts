@@ -98,4 +98,12 @@ export class CoursesController {
   completeCourse(@Param('enrollmentId') enrollmentId: string) {
     return this.courses.completeCourse(enrollmentId)
   }
+
+  @Get(':courseId')
+  getCourse(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.courses.getCourse(courseId, this.orgId(user))
+  }
 }

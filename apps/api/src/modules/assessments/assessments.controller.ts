@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Param,
   Post,
   UseGuards,
@@ -35,6 +36,16 @@ export class AssessmentsController {
   @Post('quizzes')
   createQuiz(@Body() dto: CreateQuizDto, @CurrentUser() user: JwtPayload) {
     return this.assessments.createQuiz(this.orgId(user), dto)
+  }
+
+  @Get('quizzes')
+  listQuizzes(@CurrentUser() user: JwtPayload) {
+    return this.assessments.listQuizzes(this.orgId(user))
+  }
+
+  @Get('quizzes/:quizId')
+  getQuiz(@Param('quizId') quizId: string) {
+    return this.assessments.getQuiz(quizId)
   }
 
   @Post('quizzes/:quizId/questions')

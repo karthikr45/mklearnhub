@@ -203,6 +203,20 @@ export class CoursesService {
     }
   }
 
+  async getCourse(courseId: string, orgId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId, organizationId: orgId },
+      include: {
+        chapters: {
+          orderBy: { order: 'asc' },
+          include: { lessons: { orderBy: { order: 'asc' } } },
+        },
+      },
+    })
+    if (!course) throw new NotFoundException('Course not found')
+    return course
+  }
+
   async getEnrollments(userId: string) {
     return this.prisma.enrollment.findMany({
       where: { userId },

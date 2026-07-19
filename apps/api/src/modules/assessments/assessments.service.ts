@@ -53,6 +53,56 @@ export class AssessmentsService {
     })
   }
 
+  async listQuizzes(orgId: string) {
+    return this.prisma.quiz.findMany({
+      where: { organizationId: orgId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        passingScore: true,
+        isPublished: true,
+        _count: { select: { questions: true } },
+      },
+    })
+  }
+
+  async getQuiz(quizId: string) {
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: { questions: { orderBy: { order: 'asc' } } },
+    })
+    if (!quiz) throw new NotFoundException('Quiz not found')
+
+    let questions = quiz.questions
+    if (quiz.shuffleQuestions) {
+      questions = [...questions].sort(() => Math.random() - 0.5)
+    }
+
+    // Learner-facing view: never leak isCorrect flags or correctAnswer.
+    const sanitized = questions.map((q) => ({
+      id: q.id,
+      type: q.type,
+      text: q.text,
+      points: q.points,
+      order: q.order,
+      options: this.parseOptions(q.options).map((o) => ({
+        id: o.id,
+        text: o.text,
+      })),
+    }))
+
+    return {
+      id: quiz.id,
+      title: quiz.title,
+      passingScore: quiz.passingScore,
+      timeLimitMins: quiz.timeLimitMins,
+      maxAttempts: quiz.maxAttempts,
+      isPublished: quiz.isPublished,
+      questions: sanitized,
+    }
+  }
+
   async addQuestion(quizId: string, dto: AddQuestionDto) {
     const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } })
     if (!quiz) throw new NotFoundException('Quiz not found')

@@ -29,6 +29,45 @@ export class SchoolService {
     })
   }
 
+  async listBatches(orgId: string) {
+    return this.prisma.batch.findMany({
+      where: { organizationId: orgId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { students: true } },
+        branch: { select: { name: true } },
+      },
+    })
+  }
+
+  async getBatch(batchId: string) {
+    const batch = await this.prisma.batch.findUnique({
+      where: { id: batchId },
+      include: {
+        students: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
+        timetable: {
+          orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+        },
+        academicYear: true,
+      },
+    })
+    if (!batch) throw new NotFoundException('Batch not found')
+    return batch
+  }
+
+  async getTimetable(batchId: string) {
+    const batch = await this.prisma.batch.findUnique({ where: { id: batchId } })
+    if (!batch) throw new NotFoundException('Batch not found')
+    return this.prisma.timetableSlot.findMany({
+      where: { batchId },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    })
+  }
+
   async addStudentsToBatch(batchId: string, userIds: string[]) {
     const batch = await this.prisma.batch.findUnique({ where: { id: batchId } })
     if (!batch) throw new NotFoundException('Batch not found')

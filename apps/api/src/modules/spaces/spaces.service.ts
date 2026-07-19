@@ -134,6 +134,45 @@ export class SpacesService {
     return article
   }
 
+  async getSpace(spaceId: string) {
+    const space = await this.prisma.space.findUnique({
+      where: { id: spaceId },
+      include: { manuals: { orderBy: { order: 'asc' } } },
+    })
+    if (!space) throw new NotFoundException('Space not found')
+    return space
+  }
+
+  async getManual(manualId: string) {
+    const manual = await this.prisma.manual.findUnique({
+      where: { id: manualId },
+      include: {
+        articles: {
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            status: true,
+            excerpt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    })
+    if (!manual) throw new NotFoundException('Manual not found')
+    return manual
+  }
+
+  async getArticleById(id: string) {
+    const article = await this.prisma.article.findUnique({ where: { id } })
+    if (!article) throw new NotFoundException('Article not found')
+    return this.prisma.article.update({
+      where: { id },
+      data: { views: { increment: 1 } },
+    })
+  }
+
   async searchArticles(orgId: string, query: string) {
     return this.prisma.article.findMany({
       where: {

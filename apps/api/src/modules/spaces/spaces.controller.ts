@@ -93,4 +93,19 @@ export class SpacesController {
   getArticleHistory(@Param('id') id: string) {
     return this.spaces.getArticleHistory(id)
   }
+
+  @Get('articles/:id')
+  getArticleById(@Param('id') id: string) {
+    return this.spaces.getArticleById(id)
+  }
+
+  @Get('manuals/:manualId')
+  getManual(@Param('manualId') manualId: string) {
+    return this.spaces.getManual(manualId)
+  }
+
+  @Get(':spaceId')
+  getSpace(@Param('spaceId') spaceId: string) {
+    return this.spaces.getSpace(spaceId)
+  }
 }
