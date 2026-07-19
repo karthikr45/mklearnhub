@@ -680,6 +680,9 @@ model Subscription {
   status             SubscriptionStatus @default(ACTIVE)
   stripeCustomerId   String?
   stripeSubId        String?            @unique
+  razorpayCustomerId String?
+  razorpaySubId      String?            @unique
+  provider           String?
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
   cancelAtPeriodEnd  Boolean            @default(false)
