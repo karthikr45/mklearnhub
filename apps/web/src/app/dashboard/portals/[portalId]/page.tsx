@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { api } from '@/lib/api'
+import { brandingStyle, type BrandingInput } from '@/lib/branding-style'
 import { emptyPortalData, type PortalMetadata } from '@/lib/puck.config'
 
 // Puck touches `window`, so it must never render on the server.
@@ -26,8 +27,11 @@ interface Portal {
   slug: string
   isPublic: boolean
   pageJson: Data | null
+  primaryColor?: string | null
   organization?: { slug: string }
 }
+
+type BuilderData = PortalMetadata & { branding?: BrandingInput | null }
 
 export default function PortalBuilderPage() {
   const params = useParams()
@@ -45,7 +49,7 @@ export default function PortalBuilderPage() {
   const { data: meta } = useQuery({
     queryKey: ['portal-data', portalId],
     queryFn: async () => {
-      const { data } = await api.get<PortalMetadata>(`/portals/${portalId}/data`)
+      const { data } = await api.get<BuilderData>(`/portals/${portalId}/data`)
       return data
     },
   })
@@ -118,7 +122,15 @@ export default function PortalBuilderPage() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div
+        className="min-h-0 flex-1"
+        style={brandingStyle({
+          primaryColor: portal.primaryColor ?? meta?.branding?.primaryColor,
+          secondaryColor: meta?.branding?.secondaryColor,
+          accentColor: meta?.branding?.accentColor,
+          fontFamily: meta?.branding?.fontFamily,
+        })}
+      >
         <PortalEditor
           initialData={portal.pageJson ?? emptyPortalData}
           metadata={meta ?? { courses: [], articles: [] }}

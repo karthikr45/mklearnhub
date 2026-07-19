@@ -1,11 +1,13 @@
 import type { Data } from '@measured/puck'
 import { Render } from '@measured/puck/rsc'
 
+import { brandingStyle, type BrandingInput } from '@/lib/branding-style'
 import { portalConfig, type PortalMetadata } from '@/lib/puck.config'
 
 export interface PublicPortalPayload {
-  portal: { name: string; logoUrl?: string | null }
+  portal: { name: string; logoUrl?: string | null; primaryColor?: string | null }
   pageJson: Data | null
+  branding?: BrandingInput | null
   courses: PortalMetadata['courses']
   articles: PortalMetadata['articles']
 }
@@ -30,8 +32,16 @@ export function PortalDocument({ data }: { data: PublicPortalPayload }) {
     courses: data.courses ?? [],
     articles: data.articles ?? [],
   }
+  // Portal-level colour overrides the org branding; org branding supplies the
+  // rest (secondary/accent/font). Falls back to the default theme.
+  const style = brandingStyle({
+    primaryColor: data.portal.primaryColor ?? data.branding?.primaryColor,
+    secondaryColor: data.branding?.secondaryColor,
+    accentColor: data.branding?.accentColor,
+    fontFamily: data.branding?.fontFamily,
+  })
   return (
-    <main>
+    <main style={style} className="bg-background text-foreground">
       <Render config={portalConfig} data={pageData} metadata={metadata} />
     </main>
   )

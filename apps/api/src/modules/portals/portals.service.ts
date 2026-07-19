@@ -108,10 +108,30 @@ export class PortalsService {
     return { courses, articles }
   }
 
-  /** Authenticated preview data for the builder. */
+  private async brandingSummary(orgId: string) {
+    const b = await this.prisma.brandingConfig.findUnique({
+      where: { organizationId: orgId },
+    })
+    return b
+      ? {
+          primaryColor: b.primaryColor,
+          secondaryColor: b.secondaryColor,
+          accentColor: b.accentColor,
+          fontFamily: b.fontFamily,
+          appName: b.appName,
+          logoUrl: b.logoUrl,
+        }
+      : null
+  }
+
+  /** Authenticated preview data for the builder (content + branding). */
   async getBuilderData(id: string, orgId: string) {
     await this.getOne(id, orgId)
-    return this.orgContent(orgId)
+    const [content, branding] = await Promise.all([
+      this.orgContent(orgId),
+      this.brandingSummary(orgId),
+    ])
+    return { ...content, branding }
   }
 
   private async buildPublicPayload(
@@ -120,10 +140,10 @@ export class PortalsService {
     if (!portal || !portal.isPublic || !portal.isActive) {
       throw new NotFoundException('Portal not found')
     }
-    const branding = await this.prisma.brandingConfig.findUnique({
-      where: { organizationId: portal.organizationId },
-    })
-    const { courses, articles } = await this.orgContent(portal.organizationId)
+    const [branding, { courses, articles }] = await Promise.all([
+      this.brandingSummary(portal.organizationId),
+      this.orgContent(portal.organizationId),
+    ])
     return {
       portal: {
         id: portal.id,
@@ -133,16 +153,7 @@ export class PortalsService {
         logoUrl: portal.logoUrl,
       },
       pageJson: portal.pageJson,
-      branding: branding
-        ? {
-            primaryColor: branding.primaryColor,
-            secondaryColor: branding.secondaryColor,
-            accentColor: branding.accentColor,
-            fontFamily: branding.fontFamily,
-            appName: branding.appName,
-            logoUrl: branding.logoUrl,
-          }
-        : null,
+      branding,
       courses,
       articles,
     }
