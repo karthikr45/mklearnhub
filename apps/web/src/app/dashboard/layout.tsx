@@ -1,10 +1,11 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
+import { canAccess } from '@/lib/roles'
 import { useAuthStore } from '@/lib/store'
 
 export default function DashboardLayout({
@@ -13,11 +14,20 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const accessToken = useAuthStore((s) => s.accessToken)
+  const role = useAuthStore((s) => s.user?.role)
 
   useEffect(() => {
-    if (!accessToken) router.replace('/login')
-  }, [accessToken, router])
+    if (!accessToken) {
+      router.replace('/login')
+      return
+    }
+    // Keep roles inside the sections they're allowed to see.
+    if (role && !canAccess(role, pathname)) {
+      router.replace('/dashboard')
+    }
+  }, [accessToken, role, pathname, router])
 
   return (
     <div className="flex min-h-screen">

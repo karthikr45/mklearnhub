@@ -73,8 +73,13 @@ fi
 # 6. Web + admin build (Next compiles + generates routes) --------------------
 step "6/6 web + admin build"
 if pnpm --filter @learnhub/web build >/tmp/lh-verify-web.log 2>&1; then
-  # assert the dashboard route made it into the build output
-  if find apps/web/.next/server/app/dashboard -name 'page*.js' 2>/dev/null | grep -q .; then
+  # assert the dashboard route made it into the build output.
+  # NB: pipe into `wc -l` (which drains all of find's output) rather than
+  # `grep -q` (which closes the pipe on first match → find dies with SIGPIPE →
+  # `set -o pipefail` reports the whole pipeline as failed once the tree is big
+  # enough to still be traversing). That produced a flaky false negative here.
+  DASH_PAGES=$(find apps/web/.next/server/app/dashboard -name 'page*.js' 2>/dev/null | wc -l)
+  if [ "$DASH_PAGES" -gt 0 ]; then
     ok "web built; /dashboard route present"
   else bad "web built but /dashboard route missing from output"; fi
 else bad "web build failed — see /tmp/lh-verify-web.log"; fi

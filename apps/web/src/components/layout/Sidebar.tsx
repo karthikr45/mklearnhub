@@ -1,35 +1,46 @@
 'use client'
 
 import {
+  Award,
   BarChart3,
   BookOpen,
+  ClipboardList,
+  Compass,
+  Globe,
   GraduationCap,
+  Home,
   LayoutDashboard,
   School,
   Settings,
   Users,
-  Globe,
-  ClipboardList,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { navForRole } from '@/lib/roles'
+import { useAuthStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
-const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/knowledge', label: 'Knowledge', icon: BookOpen },
-  { href: '/dashboard/courses', label: 'Courses', icon: GraduationCap },
-  { href: '/dashboard/assessments', label: 'Assessments', icon: ClipboardList },
-  { href: '/dashboard/school', label: 'School', icon: School },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/portals', label: 'Portals', icon: Globe },
-  { href: '/dashboard/members', label: 'Members', icon: Users },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-]
+const ICONS: Record<string, LucideIcon> = {
+  home: Home,
+  dashboard: LayoutDashboard,
+  book: BookOpen,
+  grad: GraduationCap,
+  clipboard: ClipboardList,
+  school: School,
+  chart: BarChart3,
+  globe: Globe,
+  users: Users,
+  settings: Settings,
+  compass: Compass,
+  award: Award,
+}
 
 export function Sidebar() {
   const pathname = usePathname()
+  const role = useAuthStore((s) => s.user?.role)
+  const items = navForRole(role)
 
   return (
     <aside className="hidden w-60 shrink-0 border-r bg-card md:block">
@@ -39,7 +50,8 @@ export function Sidebar() {
         </Link>
       </div>
       <nav className="space-y-1 p-3">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon }) => {
+          const Icon = ICONS[icon] ?? Home
           const active =
             href === '/dashboard'
               ? pathname === href

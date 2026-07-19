@@ -84,7 +84,7 @@ async function main() {
     ),
   )
 
-  await Promise.all(
+  const acmeLearners = await Promise.all(
     [1, 2, 3, 4, 5].map((n) =>
       prisma.user.create({
         data: {
@@ -195,6 +195,26 @@ async function main() {
     ),
   )
 
+  // ─── Parent linked to the first two students ─────
+  const sunriseParent = await prisma.user.create({
+    data: {
+      email: 'parent@sunrise.edu',
+      name: 'Sunrise Parent',
+      role: 'PARENT',
+      organizationId: sunrise.id,
+      passwordHash: PASSWORD_HASH,
+      emailVerified: true,
+      onboarded: true,
+    },
+  })
+  await Promise.all(
+    students.slice(0, 2).map((s) =>
+      prisma.parentStudentLink.create({
+        data: { parentId: sunriseParent.id, studentId: s.id, relation: 'parent' },
+      }),
+    ),
+  )
+
   for (const batchName of ['Grade 10 - A', 'Grade 10 - B', 'Grade 11 - A']) {
     const batch = await prisma.batch.create({
       data: {
@@ -228,6 +248,16 @@ async function main() {
             term: 'Term 1',
           },
         })
+        // A week of attendance so the student/parent overview has data
+        await prisma.attendanceRecord.createMany({
+          data: [
+            { batchId: batch.id, userId: s.id, date: new Date('2026-07-13'), status: 'PRESENT' },
+            { batchId: batch.id, userId: s.id, date: new Date('2026-07-14'), status: 'PRESENT' },
+            { batchId: batch.id, userId: s.id, date: new Date('2026-07-15'), status: 'ABSENT' },
+            { batchId: batch.id, userId: s.id, date: new Date('2026-07-16'), status: 'PRESENT' },
+            { batchId: batch.id, userId: s.id, date: new Date('2026-07-17'), status: 'PRESENT' },
+          ],
+        })
       }
     }
   }
@@ -236,9 +266,11 @@ async function main() {
   const instructors = [acmeInstructors[0]!, acmeInstructors[1]!, sunriseInstructor]
   const orgs = [acme.id, acme.id, sunrise.id]
   const courseTitles = ['Intro to TypeScript', 'Advanced React', 'Physics 101']
+  const acmeCourses: { id: string; title: string; firstLessonId: string; lessonIds: string[] }[] = []
 
   for (let c = 0; c < courseTitles.length; c++) {
     const title = courseTitles[c]!
+    const lessonIds: string[] = []
     const course = await prisma.course.create({
       data: {
         title,
@@ -269,6 +301,7 @@ async function main() {
             videoDurationSecs: 600,
           },
         })
+        lessonIds.push(lesson.id)
         // Attach a quiz with 10 questions to the first lesson of each course
         if (ch === 1 && l === 1) {
           const quiz = await prisma.quiz.create({
@@ -296,11 +329,87 @@ async function main() {
         }
       }
     }
+    if (orgs[c] === acme.id) {
+      acmeCourses.push({ id: course.id, title, firstLessonId: lessonIds[0]!, lessonIds })
+    }
+  }
+
+  // ─── Enrollments so learners (and the admin dashboard) have data ──
+  // learner1 → fully completes the first course (earns a certificate)
+  // learner2 → half-way through the first course
+  // learner3 → just started the second course
+  const [tsCourse, reactCourse] = acmeCourses
+  const [learner1, learner2, learner3] = acmeLearners
+  if (tsCourse && learner1) {
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        userId: learner1.id,
+        courseId: tsCourse.id,
+        status: 'COMPLETED',
+        progressPct: 100,
+        completedAt: new Date('2026-07-10'),
+        lastAccessAt: new Date('2026-07-10'),
+      },
+    })
+    await prisma.lessonProgress.createMany({
+      data: tsCourse.lessonIds.map((lessonId) => ({
+        enrollmentId: enrollment.id,
+        lessonId,
+        userId: learner1.id,
+        isCompleted: true,
+        watchedSecs: 600,
+        completedAt: new Date('2026-07-10'),
+      })),
+    })
+    await prisma.certificate.create({
+      data: {
+        userId: learner1.id,
+        courseId: tsCourse.id,
+        enrollmentId: enrollment.id,
+        certificateNo: 'LH-2026-000001',
+      },
+    })
+  }
+  if (tsCourse && learner2) {
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        userId: learner2.id,
+        courseId: tsCourse.id,
+        status: 'IN_PROGRESS',
+        progressPct: 50,
+        lastAccessAt: new Date('2026-07-15'),
+      },
+    })
+    await prisma.lessonProgress.createMany({
+      data: tsCourse.lessonIds.slice(0, 2).map((lessonId) => ({
+        enrollmentId: enrollment.id,
+        lessonId,
+        userId: learner2.id,
+        isCompleted: true,
+        watchedSecs: 600,
+        completedAt: new Date('2026-07-15'),
+      })),
+    })
+  }
+  if (reactCourse && learner3) {
+    await prisma.enrollment.create({
+      data: {
+        userId: learner3.id,
+        courseId: reactCourse.id,
+        status: 'IN_PROGRESS',
+        progressPct: 10,
+        lastAccessAt: new Date('2026-07-18'),
+      },
+    })
   }
 
   console.warn('✅ Seed complete.')
   console.warn('   Super Admin: admin@learnhub.com / Admin@123')
   console.warn('   Org Admin:   admin@acmecorp.com / Admin@123')
+  console.warn('   Instructor:  instructor1@acmecorp.com / Admin@123')
+  console.warn('   Learner:     learner1@acmecorp.com / Admin@123 (has a certificate)')
+  console.warn('   Student:     student1@sunrise.edu / Admin@123')
+  console.warn('   Parent:      parent@sunrise.edu / Admin@123')
 }
 
 main()

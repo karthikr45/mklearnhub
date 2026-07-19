@@ -37,6 +37,7 @@ export function useAuth() {
       password: string
       name: string
       orgName?: string
+      inviteToken?: string
     }) => {
       const { data } = await api.post<AuthResponse>('/auth/register', input)
       return data
