@@ -41,6 +41,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard/explore', label: 'Explore', icon: 'compass', roles: LEARNER_ROLES },
   { href: '/dashboard/certificates', label: 'Certificates', icon: 'award', roles: LEARNER_ROLES },
   { href: '/dashboard/my-class', label: 'My Class', icon: 'school', roles: ['STUDENT'] },
+  { href: '/dashboard/groups', label: 'Study Groups', icon: 'messages', roles: ['STUDENT'] },
   // Parent
   { href: '/dashboard/children', label: 'My Children', icon: 'users', roles: ['PARENT'] },
   // Shared reading
@@ -50,6 +51,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard/courses', label: 'Courses', icon: 'grad', roles: STAFF_ROLES },
   { href: '/dashboard/school', label: 'School', icon: 'school', roles: STAFF_ROLES },
   { href: '/dashboard/analytics', label: 'Analytics', icon: 'chart', roles: STAFF_ROLES },
+  { href: '/dashboard/safety', label: 'Safety', icon: 'shield', roles: STAFF_ROLES },
   // Admin only
   { href: '/dashboard/portals', label: 'Portals', icon: 'globe', roles: ['ORG_ADMIN'] },
   { href: '/dashboard/members', label: 'Members', icon: 'users', roles: ['ORG_ADMIN'] },

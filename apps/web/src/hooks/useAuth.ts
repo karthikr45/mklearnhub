@@ -52,10 +52,33 @@ export function useAuth() {
     },
   })
 
+  const registerStudent = useMutation({
+    mutationFn: async (input: {
+      email: string
+      password: string
+      name: string
+      joinCode: string
+    }) => {
+      const { data } = await api.post<AuthResponse>(
+        '/auth/register/student',
+        input,
+      )
+      return data
+    },
+    onSuccess: (data) => {
+      setAuth({
+        user: data.user,
+        accessToken: data.tokens.accessToken,
+        refreshToken: data.tokens.refreshToken,
+      })
+      router.push('/dashboard')
+    },
+  })
+
   const logout = () => {
     clear()
     router.push('/login')
   }
 
-  return { user, login, register, logout }
+  return { user, login, register, registerStudent, logout }
 }

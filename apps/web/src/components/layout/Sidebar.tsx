@@ -10,8 +10,10 @@ import {
   GraduationCap,
   Home,
   LayoutDashboard,
+  MessagesSquare,
   School,
   Settings,
+  ShieldCheck,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -35,6 +37,8 @@ const ICONS: Record<string, LucideIcon> = {
   settings: Settings,
   compass: Compass,
   award: Award,
+  messages: MessagesSquare,
+  shield: ShieldCheck,
 }
 
 export function Sidebar() {

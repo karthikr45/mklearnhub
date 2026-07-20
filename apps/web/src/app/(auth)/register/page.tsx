@@ -85,6 +85,21 @@ function RegisterForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <h2 className="text-center text-lg font-semibold">Create account</h2>
 
+      {!hasValidInvite && (
+        <Link
+          href="/register/student"
+          className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm transition hover:bg-primary/10"
+        >
+          <span>
+            <span className="font-medium">Are you a school student?</span>
+            <span className="block text-xs text-muted-foreground">
+              Join with your class code
+            </span>
+          </span>
+          <span aria-hidden className="text-primary">→</span>
+        </Link>
+      )}
+
       {hasValidInvite && (
         <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
           You&apos;ve been invited to join{' '}
