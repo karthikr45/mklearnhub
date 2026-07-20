@@ -25,6 +25,13 @@ model Organization {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // School directory (used when type = SCHOOL). Lets students find and
+  // self-register into a real, listed institution.
+  board             EducationBoard?
+  state             IndianState?
+  city              String?
+  listedInDirectory Boolean         @default(false)
+
   users         User[]
   portals       Portal[]
   spaces        Space[]
@@ -34,16 +41,18 @@ model Organization {
   subscriptions Subscription[]
   invites       Invite[]
 
-  ssoConfiguration   SsoConfiguration?
-  hrmsSyncs          HrmsSync[]
-  scormPackages      ScormPackage[]
-  apiKeys            ApiKey[]
-  webhooks           Webhook[]
-  brandingConfig     BrandingConfig?
-  dedicatedInstance  DedicatedInstance?
-  bulkImportJobs     BulkImportJob[]
+  ssoConfiguration  SsoConfiguration?
+  hrmsSyncs         HrmsSync[]
+  scormPackages     ScormPackage[]
+  apiKeys           ApiKey[]
+  webhooks          Webhook[]
+  brandingConfig    BrandingConfig?
+  dedicatedInstance DedicatedInstance?
+  bulkImportJobs    BulkImportJob[]
+  studyGroups       StudyGroup[]
 
   @@index([slug])
+  @@index([type, state, board])
   @@map("organizations")
 }
 
@@ -105,6 +114,12 @@ model User {
   batchStudents   BatchStudent[]
   lessonProgress  LessonProgress[]
   scormTracking   ScormTracking[]
+
+  studyGroupsCreated    StudyGroup[]         @relation("GroupCreator")
+  studyGroupMemberships StudyGroupMember[]
+  studyGroupMessages    StudyGroupMessage[]
+  studyGroupResources   StudyGroupResource[]
+  moderationEvents      ModerationEvent[]
 
   @@index([organizationId])
   @@index([email])
@@ -211,15 +226,15 @@ model Space {
 }
 
 model Manual {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   slug        String
   description String?
   spaceId     String
-  order       Int       @default(0)
-  isPublic    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  order       Int      @default(0)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   space    Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   articles Article[]
@@ -517,17 +532,24 @@ model AssignmentSubmission {
 // ─── School Module ───────────────────────────────────
 
 model Batch {
-  id             String    @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String
   organizationId String
   branchId       String?
   academicYearId String?
   startDate      DateTime?
   endDate        DateTime?
-  isActive       Boolean   @default(true)
+  isActive       Boolean         @default(true)
   maxStudents    Int?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  // Class / section metadata + self-registration join code (Google
+  // Classroom style). A student who enters `joinCode` is bound to exactly
+  // this school + academic year + class.
+  grade          String?
+  section        String?
+  board          EducationBoard?
+  joinCode       String?         @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   organization Organization       @relation(fields: [organizationId], references: [id])
   branch       Branch?            @relation(fields: [branchId], references: [id])
@@ -575,8 +597,9 @@ model AcademicYear {
   isCurrent      Boolean  @default(false)
   createdAt      DateTime @default(now())
 
-  batches Batch[]
-  grades  Grade[]
+  batches     Batch[]
+  grades      Grade[]
+  studyGroups StudyGroup[]
 
   @@index([organizationId])
   @@map("academic_years")
@@ -695,6 +718,101 @@ model Subscription {
   @@map("subscriptions")
 }
 
+// ─── Student study groups (peer-scoped, moderated) ───
+
+// A student-created study group, strictly scoped to one school
+// (organization) + one academic year. Only STUDENTs of that same school and
+// year may join, so children only ever share space with verified classmates.
+model StudyGroup {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  academicYearId String
+  gradeLabel     String?
+  createdById    String
+  isArchived     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear         @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  createdBy    User                 @relation("GroupCreator", fields: [createdById], references: [id])
+  members      StudyGroupMember[]
+  messages     StudyGroupMessage[]
+  resources    StudyGroupResource[]
+
+  @@index([organizationId, academicYearId])
+  @@map("study_groups")
+}
+
+model StudyGroupMember {
+  id       String         @id @default(cuid())
+  groupId  String
+  userId   String
+  role     StudyGroupRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+
+  group StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("study_group_members")
+}
+
+model StudyGroupMessage {
+  id               String           @id @default(cuid())
+  groupId          String
+  userId           String
+  body             String
+  moderationStatus ModerationStatus @default(APPROVED)
+  createdAt        DateTime         @default(now())
+
+  group StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@map("study_group_messages")
+}
+
+model StudyGroupResource {
+  id               String            @id @default(cuid())
+  groupId          String
+  userId           String
+  type             GroupResourceType
+  title            String
+  body             String?
+  url              String?
+  fileKey          String?
+  moderationStatus ModerationStatus  @default(APPROVED)
+  createdAt        DateTime          @default(now())
+
+  group StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@map("study_group_resources")
+}
+
+// Audit trail of every child-safety decision. School staff review this.
+model ModerationEvent {
+  id             String               @id @default(cuid())
+  organizationId String?
+  userId         String
+  targetType     ModerationTargetType
+  status         ModerationStatus
+  reasons        String[]
+  matched        String[]
+  excerpt        String?
+  createdAt      DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@map("moderation_events")
+}
+
 // ─── Enums ───────────────────────────────────────────
 
 enum UserRole {
@@ -781,6 +899,47 @@ enum AttendanceStatus {
   ABSENT
   LATE
   EXCUSED
+}
+
+// School education boards / syllabi. Starting with the two Telugu-state
+// boards; CBSE/ICSE/others included so the directory can grow nationally.
+enum EducationBoard {
+  TELANGANA_STATE
+  ANDHRA_PRADESH_STATE
+  CBSE
+  ICSE
+  IB
+  OTHER
+}
+
+// Indian states (extend as the directory expands). Telangana & Andhra
+// Pradesh to start.
+enum IndianState {
+  TELANGANA
+  ANDHRA_PRADESH
+}
+
+enum StudyGroupRole {
+  OWNER
+  MEMBER
+}
+
+enum GroupResourceType {
+  NOTE
+  LINK
+  FILE
+}
+
+// Result of the child-safety screen applied to every message / resource.
+enum ModerationStatus {
+  APPROVED
+  BLOCKED
+  FLAGGED
+}
+
+enum ModerationTargetType {
+  MESSAGE
+  RESOURCE
 }
 
 enum SubscriptionStatus {

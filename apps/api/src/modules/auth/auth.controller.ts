@@ -20,6 +20,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RefreshDto } from './dto/refresh.dto'
 import { RegisterDto } from './dto/register.dto'
+import { RegisterStudentDto } from './dto/register-student.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 
@@ -41,6 +42,11 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto)
+  }
+
+  @Post('register/student')
+  registerStudent(@Body() dto: RegisterStudentDto) {
+    return this.auth.registerStudent(dto)
   }
 
   @Post('login')

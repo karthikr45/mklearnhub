@@ -16,6 +16,7 @@ import { AuthModule } from './modules/auth/auth.module'
 import { BillingModule } from './modules/billing/billing.module'
 import { BrandingModule } from './modules/branding/branding.module'
 import { CoursesModule } from './modules/courses/courses.module'
+import { DirectoryModule } from './modules/directory/directory.module'
 import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
@@ -28,6 +29,7 @@ import { SearchModule } from './modules/search/search.module'
 import { SpacesModule } from './modules/spaces/spaces.module'
 import { SsoModule } from './modules/sso/sso.module'
 import { StorageModule } from './modules/storage/storage.module'
+import { StudyGroupsModule } from './modules/study-groups/study-groups.module'
 import { VideoModule } from './modules/video/video.module'
 import { PrismaModule } from './prisma/prisma.module'
 
@@ -49,6 +51,8 @@ import { PrismaModule } from './prisma/prisma.module'
     CoursesModule,
     AssessmentsModule,
     SchoolModule,
+    DirectoryModule,
+    StudyGroupsModule,
     AnalyticsModule,
     StorageModule,
     VideoModule,

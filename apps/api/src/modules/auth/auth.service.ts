@@ -18,6 +18,7 @@ import { AuditService } from '../audit/audit.service'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
+import { RegisterStudentDto } from './dto/register-student.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
 
 interface GoogleProfile {
@@ -74,6 +75,59 @@ export class AuthService {
     return this.prisma.session.create({
       data: { userId, refreshToken, expiresAt },
     })
+  }
+
+  /**
+   * Student self-registration via a batch join code. The code is the security
+   * gate: it binds the new STUDENT to a real school + academic year + class,
+   * so children only ever end up alongside verified classmates.
+   */
+  async registerStudent(
+    dto: RegisterStudentDto,
+  ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    })
+    if (existing) throw new ConflictException('Email already registered')
+
+    const policy = validatePassword(dto.password)
+    if (!policy.valid) {
+      throw new BadRequestException(policy.errors.join('; '))
+    }
+
+    const code = dto.joinCode.trim().toUpperCase()
+    const batch = await this.prisma.batch.findUnique({
+      where: { joinCode: code },
+      include: { organization: { select: { id: true, name: true } } },
+    })
+    if (!batch) {
+      throw new BadRequestException('Invalid class join code')
+    }
+    if (batch.maxStudents) {
+      const count = await this.prisma.batchStudent.count({
+        where: { batchId: batch.id },
+      })
+      if (count >= batch.maxStudents) {
+        throw new BadRequestException('This class is full')
+      }
+    }
+
+    const passwordHash = await hashPassword(dto.password)
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        passwordHash,
+        role: 'STUDENT',
+        onboarded: true,
+        organization: { connect: { id: batch.organizationId } },
+        batchStudents: { create: { batchId: batch.id } },
+      },
+    })
+
+    const { refreshToken, accessToken } = await this.generateTokens(user, nanoid())
+    await this.createSession(user.id, refreshToken)
+    return { user: this.toAuthUser(user), tokens: { accessToken, refreshToken } }
   }
 
   async register(dto: RegisterDto): Promise<{ user: AuthUser; tokens: AuthTokens }> {

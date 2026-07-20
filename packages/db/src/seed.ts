@@ -154,6 +154,11 @@ async function main() {
       plan: 'INSTITUTE',
       maxUsers: 500,
       maxCourses: 200,
+      // Listed in the public school directory so students can self-register.
+      state: 'TELANGANA',
+      board: 'TELANGANA_STATE',
+      city: 'Hyderabad',
+      listedInDirectory: true,
     },
   })
 
@@ -215,7 +220,15 @@ async function main() {
     ),
   )
 
+  // grade/section/joinCode per class; codes are what students enter to
+  // self-register into the right class (Google Classroom style).
+  const batchMeta: Record<string, { grade: string; section: string; joinCode: string }> = {
+    'Grade 10 - A': { grade: 'Class 10', section: 'A', joinCode: 'TS-10A-DEMO' },
+    'Grade 10 - B': { grade: 'Class 10', section: 'B', joinCode: 'TS-10B-DEMO' },
+    'Grade 11 - A': { grade: 'Intermediate 1st Year', section: 'A', joinCode: 'TS-11A-DEMO' },
+  }
   for (const batchName of ['Grade 10 - A', 'Grade 10 - B', 'Grade 11 - A']) {
+    const meta = batchMeta[batchName]!
     const batch = await prisma.batch.create({
       data: {
         name: batchName,
@@ -223,6 +236,10 @@ async function main() {
         academicYearId: academicYear.id,
         startDate: new Date('2025-06-01'),
         endDate: new Date('2026-04-30'),
+        grade: meta.grade,
+        section: meta.section,
+        board: 'TELANGANA_STATE',
+        joinCode: meta.joinCode,
       },
     })
     await prisma.timetableSlot.createMany({
@@ -410,6 +427,8 @@ async function main() {
   console.warn('   Learner:     learner1@acmecorp.com / Admin@123 (has a certificate)')
   console.warn('   Student:     student1@sunrise.edu / Admin@123')
   console.warn('   Parent:      parent@sunrise.edu / Admin@123')
+  console.warn('   Student self-signup join codes (Sunrise Academy, Telangana):')
+  console.warn('     Class 10-A: TS-10A-DEMO   Class 10-B: TS-10B-DEMO   Inter 1st-A: TS-11A-DEMO')
 }
 
 main()
