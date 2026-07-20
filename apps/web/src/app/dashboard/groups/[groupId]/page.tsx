@@ -12,10 +12,12 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { LiveBattle } from '@/components/study/LiveBattle'
 import { api } from '@/lib/api'
+import { getStudySocket } from '@/lib/studySocket'
 
 interface Msg {
   id: string
@@ -53,7 +55,9 @@ export default function GroupDetailPage() {
   const params = useParams<{ groupId: string }>()
   const groupId = params.groupId
   const qc = useQueryClient()
-  const [tab, setTab] = useState<'chat' | 'resources' | 'members'>('chat')
+  const [tab, setTab] = useState<'chat' | 'battle' | 'resources' | 'members'>(
+    'chat',
+  )
 
   const { data: group } = useQuery({
     queryKey: ['group', groupId],
@@ -84,7 +88,7 @@ export default function GroupDetailPage() {
       </div>
 
       <div className="mb-5 flex gap-1 border-b">
-        {(['chat', 'resources', 'members'] as const).map((t) => (
+        {(['chat', 'battle', 'resources', 'members'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -94,12 +98,13 @@ export default function GroupDetailPage() {
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {t}
+            {t === 'battle' ? 'Quiz battle' : t}
           </button>
         ))}
       </div>
 
-      {tab === 'chat' && <ChatTab groupId={groupId} qc={qc} />}
+      {tab === 'chat' && <ChatTab groupId={groupId} />}
+      {tab === 'battle' && <LiveBattle groupId={groupId} />}
       {tab === 'resources' && <ResourcesTab groupId={groupId} qc={qc} />}
       {tab === 'members' && (
         <div className="space-y-2">
@@ -125,36 +130,72 @@ export default function GroupDetailPage() {
   )
 }
 
-function ChatTab({
-  groupId,
-  qc,
-}: {
-  groupId: string
-  qc: ReturnType<typeof useQueryClient>
-}) {
+/**
+ * Realtime chat over the /study socket. Initial history loads via REST, then
+ * live messages + presence arrive over the socket; sends go through the
+ * socket so they hit the same child-safety moderation before broadcast.
+ */
+function ChatTab({ groupId }: { groupId: string }) {
   const [text, setText] = useState('')
-  const { data: messages } = useQuery({
+  const [messages, setMessages] = useState<Msg[]>([])
+  const [online, setOnline] = useState<{ userId: string; name: string }[]>([])
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const { data: history } = useQuery({
     queryKey: ['group-messages', groupId],
     queryFn: async () =>
       (await api.get<Msg[]>(`/study-groups/${groupId}/messages`)).data,
-    refetchInterval: 5000,
   })
 
-  const send = useMutation({
-    mutationFn: async (body: string) =>
-      (await api.post(`/study-groups/${groupId}/messages`, { body })).data,
-    onSuccess: () => {
-      setText('')
-      qc.invalidateQueries({ queryKey: ['group-messages', groupId] })
-    },
-    onError: (err) =>
-      toast.error(blockedMessage(err, 'Your message could not be sent')),
-  })
+  useEffect(() => {
+    if (history) setMessages(history)
+  }, [history])
+
+  useEffect(() => {
+    const socket = getStudySocket()
+    socket.emit('group:join', { groupId })
+    const onMessage = (m: Msg) =>
+      setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]))
+    const onPresence = (p: { groupId: string; online: { userId: string; name: string }[] }) => {
+      if (p.groupId === groupId) setOnline(p.online)
+    }
+    const onBlocked = () =>
+      toast.error('Your message was blocked to keep the group safe.')
+    socket.on('chat:message', onMessage)
+    socket.on('presence', onPresence)
+    socket.on('chat:blocked', onBlocked)
+    return () => {
+      socket.emit('group:leave', { groupId })
+      socket.off('chat:message', onMessage)
+      socket.off('presence', onPresence)
+      socket.off('chat:blocked', onBlocked)
+    }
+  }, [groupId])
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+  }, [messages])
+
+  const send = () => {
+    const body = text.trim()
+    if (!body) return
+    getStudySocket().emit('chat:send', { groupId, body })
+    setText('')
+  }
 
   return (
     <div>
-      <div className="mb-4 max-h-[26rem] space-y-3 overflow-y-auto rounded-lg border bg-muted/20 p-4">
-        {!messages || messages.length === 0 ? (
+      {online.length > 0 && (
+        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+          {online.length} online: {online.map((o) => o.name.split(' ')[0]).join(', ')}
+        </div>
+      )}
+      <div
+        ref={scrollRef}
+        className="mb-4 max-h-[26rem] space-y-3 overflow-y-auto rounded-lg border bg-muted/20 p-4"
+      >
+        {messages.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No messages yet. Say hello to your classmates 👋
           </p>
@@ -183,7 +224,7 @@ function ChatTab({
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (text.trim()) send.mutate(text.trim())
+          send()
         }}
         className="flex gap-2"
       >
@@ -195,7 +236,7 @@ function ChatTab({
         />
         <button
           type="submit"
-          disabled={!text.trim() || send.isPending}
+          disabled={!text.trim()}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           <Send className="h-4 w-4" /> Send

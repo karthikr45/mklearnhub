@@ -12,9 +12,9 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@learnhub/types": "workspace:*",
-    "@measured/puck": "^0.19.0",
     "@learnhub/ui": "workspace:*",
     "@learnhub/utils": "workspace:*",
+    "@measured/puck": "^0.19.0",
     "@tanstack/react-query": "^5.59.0",
     "@tanstack/react-query-devtools": "^5.59.0",
     "axios": "^1.7.7",
@@ -28,6 +28,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.1",
     "recharts": "^2.13.0",
+    "socket.io-client": "^4.8.3",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.23.8",
