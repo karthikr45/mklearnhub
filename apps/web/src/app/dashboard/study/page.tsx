@@ -6,6 +6,7 @@ import Link from 'next/link'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StartButton } from '@/components/study/StartButton'
+import { StudyStatsBar } from '@/components/study/StudyStatsBar'
 import { api } from '@/lib/api'
 
 interface Subject {
@@ -82,6 +83,8 @@ export default function StudyHubPage() {
           <TrendingUp className="h-4 w-4" /> Syllabus progress
         </Link>
       </div>
+
+      <StudyStatsBar />
 
       {tracks && tracks.tracks.length > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-2">

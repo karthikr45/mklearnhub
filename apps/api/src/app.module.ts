@@ -18,6 +18,7 @@ import { BrandingModule } from './modules/branding/branding.module'
 import { CoursesModule } from './modules/courses/courses.module'
 import { DirectoryModule } from './modules/directory/directory.module'
 import { DoubtsModule } from './modules/doubts/doubts.module'
+import { GamificationModule } from './modules/gamification/gamification.module'
 import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
@@ -57,6 +58,7 @@ import { PrismaModule } from './prisma/prisma.module'
     StudyModule,
     StudyGroupsModule,
     DoubtsModule,
+    GamificationModule,
     AnalyticsModule,
     StorageModule,
     VideoModule,

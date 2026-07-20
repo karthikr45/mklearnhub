@@ -16,6 +16,7 @@ import {
   Settings,
   ShieldCheck,
   Target,
+  Trophy,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -43,6 +44,7 @@ const ICONS: Record<string, LucideIcon> = {
   shield: ShieldCheck,
   target: Target,
   help: HelpCircle,
+  trophy: Trophy,
 }
 
 export function Sidebar() {
