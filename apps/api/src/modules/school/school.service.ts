@@ -35,7 +35,7 @@ export class SchoolService {
       id: m.batch.id,
       name: m.batch.name,
       timetable: m.batch.timetable,
-      academicYear: m.batch.academicYear,
+      academicYear: m.batch.academicYear?.name ?? null,
       branchName: m.batch.branch?.name ?? null,
     }))
 
