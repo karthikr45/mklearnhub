@@ -57,3 +57,86 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Marketing site — premium visual utilities (scoped by class name,
+   additive, safe for the rest of the app).
+   ───────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Brand gradient used for accents, buttons and text highlights */
+  .mk-brand-text {
+    background-image: linear-gradient(100deg, #6366f1 0%, #8b5cf6 45%, #d946ef 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .mk-brand-bg {
+    background-image: linear-gradient(100deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+  }
+
+  /* Subtle grid + dot backgrounds for hero/section texture */
+  .mk-grid {
+    background-image:
+      linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .mk-dots {
+    background-image: radial-gradient(rgba(99, 102, 241, 0.18) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* Radial glow blobs */
+  .mk-glow {
+    background: radial-gradient(circle at center, rgba(139, 92, 246, 0.45), transparent 60%);
+    filter: blur(40px);
+  }
+
+  /* Fade-in-up on scroll-in (staggered via inline animationDelay) */
+  .mk-reveal {
+    opacity: 0;
+    animation: mk-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .mk-float {
+    animation: mk-float 6s ease-in-out infinite;
+  }
+  .mk-marquee {
+    animation: mk-marquee 28s linear infinite;
+  }
+}
+
+@keyframes mk-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes mk-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@keyframes mk-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-reveal,
+  .mk-float,
+  .mk-marquee {
+    animation: none;
+    opacity: 1;
+  }
+}
