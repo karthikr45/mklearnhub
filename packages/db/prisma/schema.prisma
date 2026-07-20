@@ -124,6 +124,8 @@ model User {
   studyGroupResources   StudyGroupResource[]
   moderationEvents      ModerationEvent[]
   assessmentAttempts    AssessmentAttempt[]
+  hostedBattles         QuizBattle[]         @relation("BattleHost")
+  battleParticipations  BattleParticipant[]
 
   @@index([organizationId])
   @@index([email])
@@ -914,6 +916,41 @@ model BatchExamTrack {
   @@map("batch_exam_tracks")
 }
 
+// ─── Live quiz battles (real-time, in a study group) ─
+
+model QuizBattle {
+  id          String       @id @default(cuid())
+  groupId     String
+  hostId      String
+  title       String
+  questionIds Json         @default("[]")
+  status      BattleStatus @default(LOBBY)
+  createdAt   DateTime     @default(now())
+  finishedAt  DateTime?
+
+  group        StudyGroup          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  host         User                @relation("BattleHost", fields: [hostId], references: [id])
+  participants BattleParticipant[]
+
+  @@index([groupId])
+  @@map("quiz_battles")
+}
+
+model BattleParticipant {
+  id           String   @id @default(cuid())
+  battleId     String
+  userId       String
+  score        Int      @default(0)
+  correctCount Int      @default(0)
+  joinedAt     DateTime @default(now())
+
+  battle QuizBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([battleId, userId])
+  @@map("battle_participants")
+}
+
 // ─── Student study groups (peer-scoped, moderated) ───
 
 // A student-created study group, strictly scoped to one school
@@ -937,6 +974,7 @@ model StudyGroup {
   members      StudyGroupMember[]
   messages     StudyGroupMessage[]
   resources    StudyGroupResource[]
+  battles      QuizBattle[]
 
   @@index([organizationId, academicYearId])
   @@map("study_groups")
@@ -1181,6 +1219,12 @@ enum AttemptStatus {
   IN_PROGRESS
   SUBMITTED
   EXPIRED
+}
+
+enum BattleStatus {
+  LOBBY
+  ACTIVE
+  FINISHED
 }
 
 enum SubscriptionStatus {
