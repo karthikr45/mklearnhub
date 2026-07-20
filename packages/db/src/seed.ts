@@ -638,6 +638,7 @@ async function main() {
   ]
 
   const class10MathsQ: string[] = []
+  const interQ: string[] = []
   for (const [si, subj] of curriculum.entries()) {
     const subject = await prisma.subject.create({
       data: {
@@ -677,6 +678,9 @@ async function main() {
           if (subj.name === 'Mathematics' && subj.grade === 'Class 10') {
             class10MathsQ.push(created.id)
           }
+          if (subj.grade === 'Intermediate 1st Year') {
+            interQ.push(created.id)
+          }
         }
       }
     }
@@ -704,6 +708,37 @@ async function main() {
         questionId: qid,
         order: i,
       })),
+    })
+  }
+
+  // JEE mock + a previous-year paper built from the Intermediate bank.
+  if (interQ.length > 0) {
+    const jeeMock = await prisma.assessment.create({
+      data: {
+        title: 'JEE Main — Full Mock Test 1',
+        type: 'MOCK_TEST',
+        organizationId: sunrise.id,
+        examTrack: 'JEE_MAIN',
+        durationMins: 180,
+        negativeMarking: true,
+        isPublished: true,
+      },
+    })
+    await prisma.assessmentItem.createMany({
+      data: interQ.map((qid, i) => ({ assessmentId: jeeMock.id, questionId: qid, order: i })),
+    })
+    const pyp = await prisma.assessment.create({
+      data: {
+        title: 'EAPCET 2024 — Previous Year Paper',
+        type: 'PREVIOUS_YEAR',
+        organizationId: sunrise.id,
+        examTrack: 'EAPCET_ENGINEERING',
+        durationMins: 60,
+        isPublished: true,
+      },
+    })
+    await prisma.assessmentItem.createMany({
+      data: interQ.map((qid, i) => ({ assessmentId: pyp.id, questionId: qid, order: i })),
     })
   }
 

@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { CurriculumService } from './curriculum.service'
 import { StartPracticeDto, SubmitAttemptDto } from './dto/practice.dto'
 import { PracticeService } from './practice.service'
+import { ProgressService } from './progress.service'
 
 @ApiTags('study')
 @ApiBearerAuth()
@@ -24,6 +25,7 @@ export class StudyController {
   constructor(
     private readonly curriculum: CurriculumService,
     private readonly practice: PracticeService,
+    private readonly progress: ProgressService,
   ) {}
 
   // ── Curriculum ──────────────────────────────────────
@@ -65,6 +67,17 @@ export class StudyController {
     @Param('id') id: string,
   ) {
     return this.practice.startAssessment(user.sub, user.orgId, id)
+  }
+
+  @Get('assessments/:id/leaderboard')
+  leaderboard(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.progress.leaderboard(id, user.sub)
+  }
+
+  // ── Syllabus progress tracker ───────────────────────
+  @Get('syllabus')
+  syllabus(@CurrentUser() user: JwtPayload) {
+    return this.progress.syllabus(user.sub, user.orgId)
   }
 
   // ── Practice + attempts ─────────────────────────────

@@ -32,6 +32,7 @@ interface TopicStat {
 }
 interface Attempt {
   id: string
+  assessmentId: string | null
   status: 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED'
   score: number
   maxScore: number
@@ -39,6 +40,11 @@ interface Attempt {
   totalCount: number
   analytics: { byTopic?: TopicStat[] }
   questions: Question[]
+}
+interface Leaderboard {
+  total: number
+  you: { rank: number; total: number; percentile: number } | null
+  entries: { rank: number; name: string; score: number; maxScore: number; isYou: boolean }[]
 }
 
 export default function AttemptPage() {
@@ -170,6 +176,14 @@ function Results({ attempt }: { attempt: Attempt }) {
     : 0
   const byTopic = useMemo(() => attempt.analytics?.byTopic ?? [], [attempt])
 
+  const { data: board } = useQuery({
+    queryKey: ['leaderboard', attempt.assessmentId],
+    queryFn: async () =>
+      (await api.get<Leaderboard>(`/study/assessments/${attempt.assessmentId}/leaderboard`))
+        .data,
+    enabled: Boolean(attempt.assessmentId),
+  })
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="rounded-xl border bg-card p-6 text-center">
@@ -184,7 +198,46 @@ function Results({ attempt }: { attempt: Attempt }) {
         <p className="mt-1 text-sm text-muted-foreground">
           {attempt.correctCount} of {attempt.totalCount} correct · {pct}%
         </p>
+        {board?.you && (
+          <div className="mt-4 flex justify-center gap-6 border-t pt-4">
+            <div>
+              <div className="text-2xl font-bold">#{board.you.rank}</div>
+              <div className="text-xs text-muted-foreground">
+                of {board.you.total} student{board.you.total === 1 ? '' : 's'}
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{board.you.percentile}%</div>
+              <div className="text-xs text-muted-foreground">percentile</div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {board && board.entries.length > 1 && (
+        <div className="mt-6">
+          <h3 className="mb-2 text-sm font-semibold">Leaderboard</h3>
+          <div className="space-y-1.5">
+            {board.entries.map((e) => (
+              <div
+                key={e.rank}
+                className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+                  e.isYou ? 'border-primary bg-primary/5' : 'bg-card'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-6 font-semibold text-muted-foreground">#{e.rank}</span>
+                  {e.name}
+                  {e.isYou && <span className="text-xs text-primary">(you)</span>}
+                </span>
+                <span className="font-medium">
+                  {e.score}/{e.maxScore}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {byTopic.length > 0 && (
         <div className="mt-6">

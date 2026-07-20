@@ -70,10 +70,18 @@ export default function StudyHubPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Practice & Prep"
-        description="Sharpen every chapter and get exam-ready."
-      />
+      <div className="flex items-start justify-between">
+        <PageHeader
+          title="Practice & Prep"
+          description="Sharpen every chapter and get exam-ready."
+        />
+        <Link
+          href="/dashboard/study/syllabus"
+          className="mt-1 inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
+        >
+          <TrendingUp className="h-4 w-4" /> Syllabus progress
+        </Link>
+      </div>
 
       {tracks && tracks.tracks.length > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-2">

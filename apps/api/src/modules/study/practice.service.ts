@@ -254,6 +254,7 @@ export class PracticeService {
 
     return {
       id: attempt.id,
+      assessmentId: attempt.assessmentId,
       status: attempt.status,
       score: attempt.score,
       maxScore: attempt.maxScore,
