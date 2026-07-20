@@ -14,6 +14,7 @@ import {
   School,
   Settings,
   ShieldCheck,
+  Target,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -39,6 +40,7 @@ const ICONS: Record<string, LucideIcon> = {
   award: Award,
   messages: MessagesSquare,
   shield: ShieldCheck,
+  target: Target,
 }
 
 export function Sidebar() {
