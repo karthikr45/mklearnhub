@@ -43,6 +43,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard/my-class', label: 'My Class', icon: 'school', roles: ['STUDENT'] },
   { href: '/dashboard/study', label: 'Practice', icon: 'target', roles: ['STUDENT'] },
   { href: '/dashboard/groups', label: 'Study Groups', icon: 'messages', roles: ['STUDENT'] },
+  { href: '/dashboard/doubts', label: 'Doubts', icon: 'help', roles: ['STUDENT'] },
   // Parent
   { href: '/dashboard/children', label: 'My Children', icon: 'users', roles: ['PARENT'] },
   // Shared reading

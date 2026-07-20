@@ -8,6 +8,7 @@ import {
   Compass,
   Globe,
   GraduationCap,
+  HelpCircle,
   Home,
   LayoutDashboard,
   MessagesSquare,
@@ -41,6 +42,7 @@ const ICONS: Record<string, LucideIcon> = {
   messages: MessagesSquare,
   shield: ShieldCheck,
   target: Target,
+  help: HelpCircle,
 }
 
 export function Sidebar() {
