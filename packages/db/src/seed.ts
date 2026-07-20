@@ -222,10 +222,18 @@ async function main() {
 
   // grade/section/joinCode per class; codes are what students enter to
   // self-register into the right class (Google Classroom style).
-  const batchMeta: Record<string, { grade: string; section: string; joinCode: string }> = {
-    'Grade 10 - A': { grade: 'Class 10', section: 'A', joinCode: 'TS-10A-DEMO' },
-    'Grade 10 - B': { grade: 'Class 10', section: 'B', joinCode: 'TS-10B-DEMO' },
-    'Grade 11 - A': { grade: 'Intermediate 1st Year', section: 'A', joinCode: 'TS-11A-DEMO' },
+  const batchMeta: Record<
+    string,
+    { grade: string; section: string; joinCode: string; tracks: string[] }
+  > = {
+    'Grade 10 - A': { grade: 'Class 10', section: 'A', joinCode: 'TS-10A-DEMO', tracks: ['BOARD_SSC'] },
+    'Grade 10 - B': { grade: 'Class 10', section: 'B', joinCode: 'TS-10B-DEMO', tracks: ['BOARD_SSC'] },
+    'Grade 11 - A': {
+      grade: 'Intermediate 1st Year',
+      section: 'A',
+      joinCode: 'TS-11A-DEMO',
+      tracks: ['BOARD_INTER', 'JEE_MAIN', 'EAPCET_ENGINEERING'],
+    },
   }
   for (const batchName of ['Grade 10 - A', 'Grade 10 - B', 'Grade 11 - A']) {
     const meta = batchMeta[batchName]!
@@ -240,6 +248,9 @@ async function main() {
         section: meta.section,
         board: 'TELANGANA_STATE',
         joinCode: meta.joinCode,
+        examTracks: {
+          create: meta.tracks.map((t) => ({ examTrack: t as never })),
+        },
       },
     })
     await prisma.timetableSlot.createMany({
@@ -417,6 +428,282 @@ async function main() {
         progressPct: 10,
         lastAccessAt: new Date('2026-07-18'),
       },
+    })
+  }
+
+  // ─── Curriculum + question bank (Sunrise Academy) ────
+  // Real TS/AP-flavoured content: Class 10 SSC board + Intermediate MPC
+  // (JEE / EAPCET). Compact but genuine so practice + tests work end-to-end.
+  interface SeedQ {
+    text: string
+    options: { id: string; text: string }[]
+    correct: string
+    explanation: string
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+    examTrack: string
+  }
+  interface SeedSubject {
+    name: string
+    grade: string
+    examTrack: string
+    color: string
+    chapters: { name: string; topics: { name: string; questions: SeedQ[] }[] }[]
+  }
+
+  const opt = (a: string, b: string, c: string, d: string) => [
+    { id: 'a', text: a },
+    { id: 'b', text: b },
+    { id: 'c', text: c },
+    { id: 'd', text: d },
+  ]
+
+  const curriculum: SeedSubject[] = [
+    {
+      name: 'Mathematics',
+      grade: 'Class 10',
+      examTrack: 'BOARD_SSC',
+      color: '#6366f1',
+      chapters: [
+        {
+          name: 'Real Numbers',
+          topics: [
+            {
+              name: 'Euclid’s Division Lemma & HCF',
+              questions: [
+                {
+                  text: 'The HCF of 96 and 404 is:',
+                  options: opt('2', '4', '8', '12'),
+                  correct: 'b',
+                  explanation: '404 = 96×4 + 20; 96 = 20×4 + 16; 20 = 16×1 + 4; 16 = 4×4. HCF = 4.',
+                  difficulty: 'EASY',
+                  examTrack: 'BOARD_SSC',
+                },
+                {
+                  text: 'For any positive integer n, n² − n is always divisible by:',
+                  options: opt('2', '3', '5', '7'),
+                  correct: 'a',
+                  explanation: 'n²−n = n(n−1), a product of two consecutive integers, hence even.',
+                  difficulty: 'MEDIUM',
+                  examTrack: 'BOARD_SSC',
+                },
+              ],
+            },
+            {
+              name: 'Rational & Irrational Numbers',
+              questions: [
+                {
+                  text: 'The decimal expansion of 7/80 will terminate after how many places?',
+                  options: opt('2', '3', '4', 'non-terminating'),
+                  correct: 'c',
+                  explanation: '80 = 2⁴×5; highest power is 4, so it terminates after 4 places.',
+                  difficulty: 'MEDIUM',
+                  examTrack: 'BOARD_SSC',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'Trigonometry',
+          topics: [
+            {
+              name: 'Trigonometric Ratios',
+              questions: [
+                {
+                  text: 'If sin θ = 3/5, then cos θ (θ acute) is:',
+                  options: opt('4/5', '5/4', '3/4', '5/3'),
+                  correct: 'a',
+                  explanation: 'cos θ = √(1 − 9/25) = √(16/25) = 4/5.',
+                  difficulty: 'EASY',
+                  examTrack: 'BOARD_SSC',
+                },
+                {
+                  text: 'The value of sin²30° + cos²30° is:',
+                  options: opt('0', '1/2', '1', '2'),
+                  correct: 'c',
+                  explanation: 'sin²θ + cos²θ = 1 for every θ.',
+                  difficulty: 'EASY',
+                  examTrack: 'BOARD_SSC',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Physical Science',
+      grade: 'Class 10',
+      examTrack: 'BOARD_SSC',
+      color: '#0ea5e9',
+      chapters: [
+        {
+          name: 'Acids, Bases and Salts',
+          topics: [
+            {
+              name: 'pH Scale',
+              questions: [
+                {
+                  text: 'A solution with pH = 2 is:',
+                  options: opt('Strongly basic', 'Neutral', 'Strongly acidic', 'Weakly basic'),
+                  correct: 'c',
+                  explanation: 'Low pH (<7) means acidic; pH 2 is strongly acidic.',
+                  difficulty: 'EASY',
+                  examTrack: 'BOARD_SSC',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Physics',
+      grade: 'Intermediate 1st Year',
+      examTrack: 'JEE_MAIN',
+      color: '#8b5cf6',
+      chapters: [
+        {
+          name: 'Units and Measurements',
+          topics: [
+            {
+              name: 'Dimensional Analysis',
+              questions: [
+                {
+                  text: 'The dimensional formula of force is:',
+                  options: opt('[MLT⁻¹]', '[MLT⁻²]', '[ML²T⁻²]', '[M L⁻¹ T⁻²]'),
+                  correct: 'b',
+                  explanation: 'Force = mass × acceleration = M × LT⁻² = [MLT⁻²].',
+                  difficulty: 'EASY',
+                  examTrack: 'JEE_MAIN',
+                },
+                {
+                  text: 'Which pair has the same dimensions?',
+                  options: opt('Work & Power', 'Impulse & Momentum', 'Force & Energy', 'Pressure & Force'),
+                  correct: 'b',
+                  explanation: 'Impulse = F·t and momentum = m·v both have [MLT⁻¹].',
+                  difficulty: 'MEDIUM',
+                  examTrack: 'JEE_MAIN',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'Motion in a Straight Line',
+          topics: [
+            {
+              name: 'Kinematic Equations',
+              questions: [
+                {
+                  text: 'A body starts from rest with acceleration 2 m/s². Its velocity after 5 s is:',
+                  options: opt('5 m/s', '10 m/s', '15 m/s', '20 m/s'),
+                  correct: 'b',
+                  explanation: 'v = u + at = 0 + 2×5 = 10 m/s.',
+                  difficulty: 'EASY',
+                  examTrack: 'EAPCET_ENGINEERING',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Mathematics',
+      grade: 'Intermediate 1st Year',
+      examTrack: 'JEE_MAIN',
+      color: '#f59e0b',
+      chapters: [
+        {
+          name: 'Matrices',
+          topics: [
+            {
+              name: 'Determinants',
+              questions: [
+                {
+                  text: 'The determinant of [[2,3],[1,4]] is:',
+                  options: opt('5', '8', '11', '2'),
+                  correct: 'a',
+                  explanation: '(2×4) − (3×1) = 8 − 3 = 5.',
+                  difficulty: 'EASY',
+                  examTrack: 'JEE_MAIN',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ]
+
+  const class10MathsQ: string[] = []
+  for (const [si, subj] of curriculum.entries()) {
+    const subject = await prisma.subject.create({
+      data: {
+        name: subj.name,
+        organizationId: sunrise.id,
+        grade: subj.grade,
+        examTrack: subj.examTrack as never,
+        color: subj.color,
+        order: si,
+      },
+    })
+    for (const [ci, ch] of subj.chapters.entries()) {
+      const chapter = await prisma.syllabusChapter.create({
+        data: { subjectId: subject.id, name: ch.name, order: ci },
+      })
+      for (const [ti, top] of ch.topics.entries()) {
+        const topic = await prisma.topic.create({
+          data: { chapterId: chapter.id, name: top.name, order: ti },
+        })
+        for (const q of top.questions) {
+          const created = await prisma.assessmentQuestion.create({
+            data: {
+              organizationId: sunrise.id,
+              subjectId: subject.id,
+              chapterId: chapter.id,
+              topicId: topic.id,
+              examTrack: q.examTrack as never,
+              type: 'MCQ',
+              difficulty: q.difficulty,
+              text: q.text,
+              options: q.options,
+              correctAnswer: q.correct,
+              explanation: q.explanation,
+              marks: 1,
+            },
+          })
+          if (subj.name === 'Mathematics' && subj.grade === 'Class 10') {
+            class10MathsQ.push(created.id)
+          }
+        }
+      }
+    }
+  }
+
+  // A fixed chapter test (Class 10 Maths) built from the bank.
+  if (class10MathsQ.length > 0) {
+    const mathsSubject = await prisma.subject.findFirst({
+      where: { organizationId: sunrise.id, name: 'Mathematics', grade: 'Class 10' },
+    })
+    const test = await prisma.assessment.create({
+      data: {
+        title: 'Class 10 Maths — Chapter Test',
+        type: 'CHAPTER_TEST',
+        organizationId: sunrise.id,
+        ...(mathsSubject ? { subjectId: mathsSubject.id } : {}),
+        examTrack: 'BOARD_SSC',
+        durationMins: 20,
+        isPublished: true,
+      },
+    })
+    await prisma.assessmentItem.createMany({
+      data: class10MathsQ.map((qid, i) => ({
+        assessmentId: test.id,
+        questionId: qid,
+        order: i,
+      })),
     })
   }
 

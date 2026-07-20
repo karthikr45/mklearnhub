@@ -41,15 +41,18 @@ model Organization {
   subscriptions Subscription[]
   invites       Invite[]
 
-  ssoConfiguration  SsoConfiguration?
-  hrmsSyncs         HrmsSync[]
-  scormPackages     ScormPackage[]
-  apiKeys           ApiKey[]
-  webhooks          Webhook[]
-  brandingConfig    BrandingConfig?
-  dedicatedInstance DedicatedInstance?
-  bulkImportJobs    BulkImportJob[]
-  studyGroups       StudyGroup[]
+  ssoConfiguration    SsoConfiguration?
+  hrmsSyncs           HrmsSync[]
+  scormPackages       ScormPackage[]
+  apiKeys             ApiKey[]
+  webhooks            Webhook[]
+  brandingConfig      BrandingConfig?
+  dedicatedInstance   DedicatedInstance?
+  bulkImportJobs      BulkImportJob[]
+  studyGroups         StudyGroup[]
+  subjects            Subject[]
+  assessments         Assessment[]
+  assessmentQuestions AssessmentQuestion[]
 
   @@index([slug])
   @@index([type, state, board])
@@ -120,6 +123,7 @@ model User {
   studyGroupMessages    StudyGroupMessage[]
   studyGroupResources   StudyGroupResource[]
   moderationEvents      ModerationEvent[]
+  assessmentAttempts    AssessmentAttempt[]
 
   @@index([organizationId])
   @@index([email])
@@ -558,6 +562,7 @@ model Batch {
   timetable    TimetableSlot[]
   batchCourses BatchCourse[]
   attendance   AttendanceRecord[]
+  examTracks   BatchExamTrack[]
 
   @@index([organizationId])
   @@map("batches")
@@ -716,6 +721,197 @@ model Subscription {
 
   @@index([organizationId])
   @@map("subscriptions")
+}
+
+// ─── Curriculum spine + assessment engine ────────────
+//
+// The reusable backbone for student study: every subject/chapter/topic and
+// every question hangs off this tree. `organizationId` may be null for
+// platform-global curriculum (e.g. a shared JEE Physics syllabus that any
+// school can use); a non-null value scopes it to one school.
+
+model Subject {
+  id             String         @id @default(cuid())
+  name           String
+  code           String?
+  organizationId String?
+  grade          String?
+  stream         String?
+  examTrack      ExamTrackType?
+  color          String?
+  order          Int            @default(0)
+  createdAt      DateTime       @default(now())
+
+  organization Organization?        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chapters     SyllabusChapter[]
+  questions    AssessmentQuestion[]
+  assessments  Assessment[]
+
+  @@index([organizationId])
+  @@index([examTrack])
+  @@map("subjects")
+}
+
+model SyllabusChapter {
+  id        String   @id @default(cuid())
+  subjectId String
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topics      Topic[]
+  questions   AssessmentQuestion[]
+  assessments Assessment[]
+
+  @@index([subjectId])
+  @@map("syllabus_chapters")
+}
+
+model Topic {
+  id        String   @id @default(cuid())
+  chapterId String
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  chapter   SyllabusChapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions AssessmentQuestion[]
+
+  @@index([chapterId])
+  @@map("topics")
+}
+
+// Reusable question bank. `options`/`correctAnswer` are JSON so one model
+// covers MCQ, multi-select, numeric and assertion-reason questions.
+model AssessmentQuestion {
+  id             String                 @id @default(cuid())
+  organizationId String?
+  subjectId      String
+  chapterId      String?
+  topicId        String?
+  examTrack      ExamTrackType?
+  type           AssessmentQuestionType @default(MCQ)
+  difficulty     Difficulty             @default(MEDIUM)
+  text           String
+  options        Json                   @default("[]")
+  correctAnswer  Json
+  explanation    String?
+  marks          Int                    @default(1)
+  negativeMarks  Float                  @default(0)
+  createdById    String?
+  createdAt      DateTime               @default(now())
+
+  organization Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subject      Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapter      SyllabusChapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  topic        Topic?            @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  items        AssessmentItem[]
+  responses    AttemptResponse[]
+
+  @@index([subjectId])
+  @@index([topicId])
+  @@index([examTrack, difficulty])
+  @@map("assessment_questions")
+}
+
+// A fixed assessment: chapter test, full mock, or previous-year paper.
+// (Free-form practice does not need one — it selects questions dynamically.)
+model Assessment {
+  id              String         @id @default(cuid())
+  title           String
+  type            AssessmentType @default(CHAPTER_TEST)
+  organizationId  String?
+  subjectId       String?
+  chapterId       String?
+  examTrack       ExamTrackType?
+  durationMins    Int?
+  negativeMarking Boolean        @default(false)
+  isPublished     Boolean        @default(true)
+  createdById     String?
+  createdAt       DateTime       @default(now())
+
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subject      Subject?            @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  chapter      SyllabusChapter?    @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  items        AssessmentItem[]
+  attempts     AssessmentAttempt[]
+
+  @@index([organizationId])
+  @@index([examTrack])
+  @@map("assessments")
+}
+
+model AssessmentItem {
+  id           String @id @default(cuid())
+  assessmentId String
+  questionId   String
+  order        Int    @default(0)
+
+  assessment Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, questionId])
+  @@map("assessment_items")
+}
+
+// One student sitting: either a fixed Assessment or a dynamic practice set
+// (assessmentId null → subject/chapter/topic describe what was practised).
+model AssessmentAttempt {
+  id           String         @id @default(cuid())
+  userId       String
+  assessmentId String?
+  mode         AttemptMode    @default(PRACTICE)
+  status       AttemptStatus  @default(IN_PROGRESS)
+  subjectId    String?
+  chapterId    String?
+  topicId      String?
+  examTrack    ExamTrackType?
+  score        Float          @default(0)
+  maxScore     Float          @default(0)
+  correctCount Int            @default(0)
+  totalCount   Int            @default(0)
+  durationSecs Int?
+  analytics    Json           @default("{}")
+  startedAt    DateTime       @default(now())
+  submittedAt  DateTime?
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment Assessment?       @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+  responses  AttemptResponse[]
+
+  @@index([userId, submittedAt])
+  @@map("assessment_attempts")
+}
+
+model AttemptResponse {
+  id            String   @id @default(cuid())
+  attemptId     String
+  questionId    String
+  response      Json?
+  isCorrect     Boolean  @default(false)
+  marksAwarded  Float    @default(0)
+  timeSpentSecs Int?
+  createdAt     DateTime @default(now())
+
+  attempt  AssessmentAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("attempt_responses")
+}
+
+// Which competitive/board exams a class is preparing for.
+model BatchExamTrack {
+  id        String        @id @default(cuid())
+  batchId   String
+  examTrack ExamTrackType
+  createdAt DateTime      @default(now())
+
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, examTrack])
+  @@map("batch_exam_tracks")
 }
 
 // ─── Student study groups (peer-scoped, moderated) ───
@@ -940,6 +1136,51 @@ enum ModerationStatus {
 enum ModerationTargetType {
   MESSAGE
   RESOURCE
+}
+
+// Board + competitive exam tracks (Telangana/Andhra focus to start).
+enum ExamTrackType {
+  BOARD_SSC // Class 10 state board
+  BOARD_INTER // Intermediate / +2 board
+  JEE_MAIN
+  JEE_ADVANCED
+  NEET
+  EAPCET_ENGINEERING // formerly EAMCET (Engineering)
+  EAPCET_AGRI_MEDICAL // formerly EAMCET (Agri & Medical)
+  FOUNDATION
+}
+
+enum AssessmentType {
+  PRACTICE
+  CHAPTER_TEST
+  MOCK_TEST
+  PREVIOUS_YEAR
+}
+
+enum AssessmentQuestionType {
+  MCQ
+  MSQ
+  NUMERIC
+  ASSERTION_REASON
+  TRUE_FALSE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AttemptMode {
+  PRACTICE
+  TEST
+  MOCK
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
 }
 
 enum SubscriptionStatus {

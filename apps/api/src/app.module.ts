@@ -29,6 +29,7 @@ import { SearchModule } from './modules/search/search.module'
 import { SpacesModule } from './modules/spaces/spaces.module'
 import { SsoModule } from './modules/sso/sso.module'
 import { StorageModule } from './modules/storage/storage.module'
+import { StudyModule } from './modules/study/study.module'
 import { StudyGroupsModule } from './modules/study-groups/study-groups.module'
 import { VideoModule } from './modules/video/video.module'
 import { PrismaModule } from './prisma/prisma.module'
@@ -52,6 +53,7 @@ import { PrismaModule } from './prisma/prisma.module'
     AssessmentsModule,
     SchoolModule,
     DirectoryModule,
+    StudyModule,
     StudyGroupsModule,
     AnalyticsModule,
     StorageModule,
