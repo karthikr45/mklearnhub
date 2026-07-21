@@ -68,6 +68,14 @@ export class AuthController {
     return this.auth.getOrCreateParentCode(user.sub)
   }
 
+  @Post('me/onboarded')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  markOnboarded(@CurrentUser() user: JwtPayload) {
+    return this.auth.markOnboarded(user.sub)
+  }
+
   @Post('login')
   @HttpCode(200)
   login(@Body() dto: LoginDto) {

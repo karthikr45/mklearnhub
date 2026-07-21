@@ -17,6 +17,7 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const accessToken = useAuthStore((s) => s.accessToken)
   const role = useAuthStore((s) => s.user?.role)
+  const onboarded = useAuthStore((s) => s.user?.onboarded)
 
   // Wait for the persisted auth store to rehydrate from localStorage before
   // deciding to redirect — otherwise a refresh bounces a logged-in user to
@@ -39,10 +40,15 @@ export default function DashboardLayout({
       router.replace('/login')
       return
     }
+    // First-run: send unfinished users through the onboarding wizard.
+    if (accessToken && onboarded === false) {
+      router.replace('/onboarding')
+      return
+    }
     if (role && !canAccess(role, pathname)) {
       router.replace('/dashboard')
     }
-  }, [hydrated, accessToken, role, pathname, router])
+  }, [hydrated, accessToken, role, onboarded, pathname, router])
 
   if (!hydrated) {
     return (

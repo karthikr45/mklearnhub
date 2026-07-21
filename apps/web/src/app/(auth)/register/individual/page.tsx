@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { TermsCheckbox } from '@/components/auth/TermsCheckbox'
 import { useAuth } from '@/hooks/useAuth'
 
 const schema = z.object({
@@ -18,6 +19,9 @@ const schema = z.object({
     .regex(/[A-Z]/, 'Needs an uppercase letter')
     .regex(/[a-z]/, 'Needs a lowercase letter')
     .regex(/[0-9]/, 'Needs a number'),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the Terms and Privacy Policy' }),
+  }),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -26,6 +30,8 @@ export default function IndividualRegisterPage() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
@@ -61,6 +67,15 @@ export default function IndividualRegisterPage() {
           <input {...register('password')} type="password" className="w-full rounded-md border px-3 py-2 text-sm" />
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
+        <TermsCheckbox
+          checked={watch('termsAccepted') === true}
+          onChange={(v) =>
+            setValue('termsAccepted', v as true, { shouldValidate: true })
+          }
+          {...(errors.termsAccepted?.message
+            ? { error: errors.termsAccepted.message }
+            : {})}
+        />
         <button
           type="submit"
           disabled={registerUser.isPending}

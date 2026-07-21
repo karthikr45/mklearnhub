@@ -48,8 +48,18 @@ export class AuthService {
       name: user.name,
       role: user.role,
       orgId: user.organizationId,
+      onboarded: user.onboarded,
       ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     }
+  }
+
+  /** Marks the current user as having finished the onboarding wizard. */
+  async markOnboarded(userId: string): Promise<AuthUser> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { onboarded: true },
+    })
+    return this.toAuthUser(user)
   }
 
   async generateTokens(user: User, sessionId: string): Promise<AuthTokens> {
@@ -120,7 +130,8 @@ export class AuthService {
         name: dto.name,
         passwordHash,
         role: 'STUDENT',
-        onboarded: true,
+        termsAcceptedAt: new Date(),
+        parentalConsentAt: new Date(),
         organization: { connect: { id: batch.organizationId } },
         batchStudents: { create: { batchId: batch.id } },
       },
@@ -160,7 +171,7 @@ export class AuthService {
         name: dto.name,
         passwordHash,
         role: 'PARENT',
-        onboarded: true,
+        termsAcceptedAt: new Date(),
         ...(child.organizationId
           ? { organization: { connect: { id: child.organizationId } } }
           : {}),
@@ -225,6 +236,7 @@ export class AuthService {
       email: dto.email,
       name: dto.name,
       passwordHash,
+      termsAcceptedAt: new Date(),
     }
 
     if (dto.inviteToken) {
@@ -245,7 +257,6 @@ export class AuthService {
         },
       }
       userData.role = 'ORG_ADMIN'
-      userData.onboarded = true
     }
 
     const user = await this.prisma.user.create({ data: userData })

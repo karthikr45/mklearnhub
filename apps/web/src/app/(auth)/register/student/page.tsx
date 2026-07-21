@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import {
+  ParentalConsentCheckbox,
+  TermsCheckbox,
+} from '@/components/auth/TermsCheckbox'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 
@@ -37,6 +41,8 @@ export default function StudentRegisterPage() {
   const [checking, setChecking] = useState(false)
   const [preview, setPreview] = useState<JoinPreview | null>(null)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [terms, setTerms] = useState(false)
+  const [consent, setConsent] = useState(false)
 
   const verifyCode = async () => {
     const c = code.trim()
@@ -62,8 +68,17 @@ export default function StudentRegisterPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!terms || !consent) {
+      toast.error('Please accept the terms and confirm parental consent')
+      return
+    }
     registerStudent.mutate(
-      { ...form, joinCode: code.trim() },
+      {
+        ...form,
+        joinCode: code.trim(),
+        termsAccepted: terms,
+        parentalConsent: consent,
+      },
       { onError: () => toast.error('Could not create your account') },
     )
   }
@@ -181,9 +196,14 @@ export default function StudentRegisterPage() {
             </p>
           </div>
 
+          <div className="space-y-2.5 rounded-lg border bg-muted/20 p-3">
+            <ParentalConsentCheckbox checked={consent} onChange={setConsent} />
+            <TermsCheckbox checked={terms} onChange={setTerms} />
+          </div>
+
           <button
             type="submit"
-            disabled={registerStudent.isPending}
+            disabled={registerStudent.isPending || !terms || !consent}
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {registerStudent.isPending ? 'Creating…' : 'Create my account'}

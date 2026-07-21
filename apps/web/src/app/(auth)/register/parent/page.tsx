@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { TermsCheckbox } from '@/components/auth/TermsCheckbox'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 
@@ -24,6 +25,7 @@ function ParentForm() {
   const [checking, setChecking] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [terms, setTerms] = useState(false)
 
   const verify = async (raw: string) => {
     const c = raw.trim()
@@ -54,8 +56,12 @@ function ParentForm() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!terms) {
+      toast.error('Please accept the Terms and Privacy Policy')
+      return
+    }
     registerParent.mutate(
-      { ...form, code: code.trim() },
+      { ...form, code: code.trim(), termsAccepted: terms },
       { onError: () => toast.error('Could not create your account') },
     )
   }
@@ -128,9 +134,10 @@ function ParentForm() {
             <input required type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-md border px-3 py-2 text-sm" />
             <p className="text-xs text-muted-foreground">At least 8 characters, with uppercase, lowercase and a number.</p>
           </div>
+          <TermsCheckbox checked={terms} onChange={setTerms} />
           <button
             type="submit"
-            disabled={registerParent.isPending}
+            disabled={registerParent.isPending || !terms}
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {registerParent.isPending ? 'Creating…' : 'Create my account'}

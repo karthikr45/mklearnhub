@@ -93,6 +93,11 @@ model User {
   onboarded      Boolean   @default(false)
   timezone       String    @default("UTC")
   locale         String    @default("en")
+  // Consent records (DPDP Act 2023): when the user accepted Terms & Privacy,
+  // and — for student self-registration — when parental/guardian consent was
+  // affirmed.
+  termsAcceptedAt   DateTime?
+  parentalConsentAt DateTime?
   // A student's shareable code that lets a parent self-register already
   // linked to this child (no browsing a list of minors).
   parentLinkCode String?   @unique

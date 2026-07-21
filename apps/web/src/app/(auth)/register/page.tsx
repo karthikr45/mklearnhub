@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { TermsCheckbox } from '@/components/auth/TermsCheckbox'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 
@@ -23,6 +24,9 @@ const schema = z.object({
     .regex(/[A-Z]/, 'Needs an uppercase letter')
     .regex(/[a-z]/, 'Needs a lowercase letter')
     .regex(/[0-9]/, 'Needs a number'),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the Terms and Privacy Policy' }),
+  }),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -70,6 +74,7 @@ function InviteForm({ token }: { token: string }) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
@@ -80,7 +85,13 @@ function InviteForm({ token }: { token: string }) {
 
   const onSubmit = (values: FormValues) =>
     registerUser.mutate(
-      { email: values.email, password: values.password, name: values.name, inviteToken: token },
+      {
+        email: values.email,
+        password: values.password,
+        name: values.name,
+        inviteToken: token,
+        termsAccepted: values.termsAccepted,
+      },
       { onError: () => toast.error('Could not create account') },
     )
 
@@ -122,6 +133,15 @@ function InviteForm({ token }: { token: string }) {
       <Field label="Password" error={errors.password?.message}>
         <input {...register('password')} type="password" className="w-full rounded-md border px-3 py-2 text-sm" />
       </Field>
+      <TermsCheckbox
+        checked={watch('termsAccepted') === true}
+        onChange={(v) =>
+          setValue('termsAccepted', v as true, { shouldValidate: true })
+        }
+        {...(errors.termsAccepted?.message
+          ? { error: errors.termsAccepted.message }
+          : {})}
+      />
       <SubmitButton pending={registerUser.isPending} label="Create account" />
     </form>
   )

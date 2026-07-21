@@ -39,6 +39,7 @@ export function useAuth() {
       orgName?: string
       orgType?: string
       inviteToken?: string
+      termsAccepted: boolean
     }) => {
       const { data } = await api.post<AuthResponse>('/auth/register', input)
       return data
@@ -59,6 +60,7 @@ export function useAuth() {
       password: string
       name: string
       code: string
+      termsAccepted: boolean
     }) => {
       const { data } = await api.post<AuthResponse>('/auth/register/parent', input)
       return data
@@ -79,6 +81,8 @@ export function useAuth() {
       password: string
       name: string
       joinCode: string
+      termsAccepted: boolean
+      parentalConsent: boolean
     }) => {
       const { data } = await api.post<AuthResponse>(
         '/auth/register/student',

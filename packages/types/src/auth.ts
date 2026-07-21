@@ -17,6 +17,7 @@ export interface AuthUser {
   role: UserRole
   orgId: string | null
   avatarUrl?: string
+  onboarded: boolean
 }
 
 export const loginSchema = z.object({

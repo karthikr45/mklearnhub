@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator'
+import { Equals, IsEmail, IsString, Matches, MinLength } from 'class-validator'
 
 /**
  * Parent self-registration via a child's link code. The code binds the new
@@ -27,4 +27,8 @@ export class RegisterParentDto {
   @IsString()
   @MinLength(4)
   code!: string
+
+  @ApiProperty({ description: 'Must accept the Terms of Service and Privacy Policy' })
+  @Equals(true, { message: 'You must accept the Terms and Privacy Policy' })
+  termsAccepted!: boolean
 }

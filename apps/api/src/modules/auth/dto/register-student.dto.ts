@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator'
+import { Equals, IsEmail, IsString, Matches, MinLength } from 'class-validator'
 
 /**
  * Student self-registration. A student joins a real school by entering the
@@ -29,4 +29,14 @@ export class RegisterStudentDto {
   @IsString()
   @MinLength(4)
   joinCode!: string
+
+  @ApiProperty({ description: 'Must accept the Terms of Service and Privacy Policy' })
+  @Equals(true, { message: 'You must accept the Terms and Privacy Policy' })
+  termsAccepted!: boolean
+
+  @ApiProperty({
+    description: 'A parent/guardian has consented to this registration (DPDP)',
+  })
+  @Equals(true, { message: 'Parental/guardian consent is required to register' })
+  parentalConsent!: boolean
 }

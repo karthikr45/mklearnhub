@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import {
+  Equals,
   IsEmail,
   IsIn,
   IsOptional,
@@ -42,4 +43,8 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   inviteToken?: string
+
+  @ApiProperty({ description: 'Must accept the Terms of Service and Privacy Policy' })
+  @Equals(true, { message: 'You must accept the Terms and Privacy Policy' })
+  termsAccepted!: boolean
 }

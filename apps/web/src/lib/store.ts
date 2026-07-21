@@ -12,6 +12,7 @@ interface AuthState {
     refreshToken: string
   }) => void
   setTokens: (accessToken: string, refreshToken: string) => void
+  setUser: (user: AuthUser) => void
   clear: () => void
 }
 
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user, accessToken, refreshToken }),
       setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
+      setUser: (user) => set({ user }),
       clear: () => set({ user: null, accessToken: null, refreshToken: null }),
     }),
     { name: 'learnhub-auth' },
