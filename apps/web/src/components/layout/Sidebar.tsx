@@ -11,6 +11,7 @@ import {
   Home,
   LayoutDashboard,
   MessagesSquare,
+  PenTool,
   School,
   Settings,
   ShieldCheck,
@@ -44,6 +45,7 @@ const ICONS: Record<string, LucideIcon> = {
   target: Target,
   help: HelpCircle,
   trophy: Trophy,
+  pen: PenTool,
 }
 
 export function Sidebar() {
