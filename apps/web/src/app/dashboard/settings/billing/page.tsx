@@ -1,12 +1,13 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, FileDown, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/store'
 
 type Plan = 'FREE' | 'TEAMS' | 'INSTITUTE' | 'ENTERPRISE'
 
@@ -78,6 +79,7 @@ function formatPrice(priceInr: number | null): string {
 export default function BillingPage() {
   const queryClient = useQueryClient()
   const [pending, setPending] = useState<Plan | null>(null)
+  const user = useAuthStore((s) => s.user)
 
   const plansQuery = useQuery({
     queryKey: ['billing', 'plans'],
@@ -101,7 +103,39 @@ export default function BillingPage() {
     void queryClient.invalidateQueries({ queryKey: ['billing'] })
   }
 
-  async function verifyPayment(plan: Plan, resp: RazorpayHandlerResponse) {
+  async function downloadReceipt(
+    plan: Plan,
+    paymentId: string,
+    amountPaise: number,
+  ) {
+    try {
+      const planName =
+        plansQuery.data?.plans.find((p) => p.plan === plan)?.name ?? plan
+      const [{ generateReceiptBlob }, { downloadBlob }] = await Promise.all([
+        import('@/lib/pdf/receipt'),
+        import('@/lib/pdf/download'),
+      ])
+      const receiptNo = `LH-${paymentId.replace(/^pay_/, '').slice(-8).toUpperCase()}`
+      const blob = await generateReceiptBlob({
+        receiptNo,
+        paymentId,
+        planName,
+        amountInr: Math.round(amountPaise / 100),
+        paidAt: new Date().toISOString(),
+        billedTo: user?.name ?? 'Customer',
+        ...(user?.email ? { billedEmail: user.email } : {}),
+      })
+      downloadBlob(blob, `receipt-${receiptNo}.pdf`)
+    } catch {
+      toast.error('Could not generate the receipt')
+    }
+  }
+
+  async function verifyPayment(
+    plan: Plan,
+    resp: RazorpayHandlerResponse,
+    amountPaise: number,
+  ) {
     try {
       await api.post('/billing/verify', {
         plan,
@@ -109,8 +143,9 @@ export default function BillingPage() {
         razorpay_payment_id: resp.razorpay_payment_id,
         razorpay_signature: resp.razorpay_signature,
       })
-      toast.success('Plan activated')
+      toast.success('Plan activated — downloading your receipt')
       refetch()
+      void downloadReceipt(plan, resp.razorpay_payment_id, amountPaise)
     } catch {
       toast.error('Payment verification failed')
     }
@@ -145,7 +180,7 @@ export default function BillingPage() {
         currency: order.currency,
         name: 'LearnHub',
         handler: (resp: RazorpayHandlerResponse) => {
-          void verifyPayment(plan, resp)
+          void verifyPayment(plan, resp, order.amount)
         },
       })
       rzp.open()
@@ -201,16 +236,37 @@ export default function BillingPage() {
               ) : null}
             </div>
             {currentPlan !== 'FREE' ? (
-              <button
-                onClick={() => void cancelSubscription()}
-                disabled={pending !== null}
-                className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-              >
-                {pending === 'FREE' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
-                Cancel subscription
-              </button>
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const price =
+                    data?.plans.find((p) => p.plan === currentPlan)?.priceInr ??
+                    0
+                  return price > 0 ? (
+                    <button
+                      onClick={() =>
+                        void downloadReceipt(
+                          currentPlan,
+                          subscription?.id ?? 'current',
+                          price * 100,
+                        )
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+                    >
+                      <FileDown className="h-4 w-4" /> Receipt
+                    </button>
+                  ) : null
+                })()}
+                <button
+                  onClick={() => void cancelSubscription()}
+                  disabled={pending !== null}
+                  className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                >
+                  {pending === 'FREE' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
+                  Cancel subscription
+                </button>
+              </div>
             ) : null}
           </div>
 

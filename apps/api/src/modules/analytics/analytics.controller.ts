@@ -30,6 +30,11 @@ export class AnalyticsController {
     return this.analytics.getOrgDashboard(this.orgId(user))
   }
 
+  @Get('trends')
+  getOrgTrends(@CurrentUser() user: JwtPayload) {
+    return this.analytics.getOrgTrends(this.orgId(user))
+  }
+
   @Get('school')
   getSchoolReport(@CurrentUser() user: JwtPayload) {
     return this.analytics.getSchoolReport(this.orgId(user))

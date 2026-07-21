@@ -1,10 +1,12 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Award, Download } from 'lucide-react'
+import { Award } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
+import { DownloadCertificateButton } from '@/components/pdf/DownloadCertificateButton'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/store'
 
 interface Certificate {
   id: string
@@ -15,6 +17,7 @@ interface Certificate {
 }
 
 export default function CertificatesPage() {
+  const userName = useAuthStore((s) => s.user?.name ?? 'Student')
   const { data, isLoading } = useQuery({
     queryKey: ['certificates'],
     queryFn: async () => {
@@ -62,18 +65,14 @@ export default function CertificatesPage() {
                     {new Date(cert.issuedAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    {cert.pdfUrl ? (
-                      <a
-                        href={cert.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-primary hover:underline"
-                      >
-                        <Download className="h-4 w-4" /> PDF
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <DownloadCertificateButton
+                      data={{
+                        recipientName: userName,
+                        courseTitle: cert.course.title,
+                        certificateNo: cert.certificateNo,
+                        issuedAt: cert.issuedAt,
+                      }}
+                    />
                   </td>
                 </tr>
               ))}

@@ -26,6 +26,12 @@ export interface OrgStats {
   completionRate: number
 }
 
+export interface OrgTrends {
+  stats: OrgStats
+  enrollmentsByMonth: { month: string; enrollments: number; completions: number }[]
+  topCourses: { title: string; enrollments: number; completionRate: number }[]
+}
+
 export interface ProgressReport {
   userId: string
   courseId: string

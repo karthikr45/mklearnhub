@@ -1,13 +1,106 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import type { OrgStats } from '@learnhub/types'
+import type { OrgStats, OrgTrends } from '@learnhub/types'
 
 import { PrismaService } from '../../prisma/prisma.service'
 
 type ExportFormat = 'csv' | 'json'
 
+const MONTH_LABELS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Live trends for the org analytics dashboard: KPI stats, a 6-month
+   * enrollment/completion time series, and the top courses by enrollment.
+   * All queries are scoped to the org's courses.
+   */
+  async getOrgTrends(orgId: string): Promise<OrgTrends> {
+    const stats = await this.getOrgDashboard(orgId)
+
+    // 6-month window, oldest → newest.
+    const now = new Date()
+    const buckets: { key: string; month: string; enrollments: number; completions: number }[] = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      buckets.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        month: MONTH_LABELS[d.getMonth()] ?? '',
+        enrollments: 0,
+        completions: 0,
+      })
+    }
+    const windowStart = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+    const byKey = new Map(buckets.map((b) => [b.key, b]))
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        course: { organizationId: orgId },
+        enrolledAt: { gte: windowStart },
+      },
+      select: { enrolledAt: true, completedAt: true },
+    })
+    for (const e of enrollments) {
+      const ek = `${e.enrolledAt.getFullYear()}-${e.enrolledAt.getMonth()}`
+      const eb = byKey.get(ek)
+      if (eb) eb.enrollments += 1
+      if (e.completedAt && e.completedAt >= windowStart) {
+        const ck = `${e.completedAt.getFullYear()}-${e.completedAt.getMonth()}`
+        const cb = byKey.get(ck)
+        if (cb) cb.completions += 1
+      }
+    }
+
+    const grouped = await this.prisma.enrollment.groupBy({
+      by: ['courseId'],
+      where: { course: { organizationId: orgId } },
+      _count: { courseId: true },
+      orderBy: { _count: { courseId: 'desc' } },
+      take: 6,
+    })
+    const courseIds = grouped.map((g) => g.courseId)
+    const courses = courseIds.length
+      ? await this.prisma.course.findMany({
+          where: { id: { in: courseIds } },
+          select: { id: true, title: true },
+        })
+      : []
+    const titleById = new Map(courses.map((c) => [c.id, c.title]))
+    const completedByCourse = courseIds.length
+      ? await this.prisma.enrollment.groupBy({
+          by: ['courseId'],
+          where: { courseId: { in: courseIds }, status: 'COMPLETED' },
+          _count: { courseId: true },
+        })
+      : []
+    const completedMap = new Map(
+      completedByCourse.map((c) => [c.courseId, c._count.courseId]),
+    )
+
+    const topCourses = grouped.map((g) => {
+      const total = g._count.courseId
+      const done = completedMap.get(g.courseId) ?? 0
+      return {
+        title: titleById.get(g.courseId) ?? 'Untitled course',
+        enrollments: total,
+        completionRate: total ? Math.round((done / total) * 100) : 0,
+      }
+    })
+
+    return {
+      stats,
+      enrollmentsByMonth: buckets.map((b) => ({
+        month: b.month,
+        enrollments: b.enrollments,
+        completions: b.completions,
+      })),
+      topCourses,
+    }
+  }
 
   async getOrgDashboard(orgId: string): Promise<OrgStats> {
     const [totalUsers, totalCourses, totalEnrollments, completed, activeLearners] =
