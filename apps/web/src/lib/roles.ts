@@ -72,7 +72,12 @@ export function navForRole(role?: string | null): NavEntry[] {
  * is a prefix of that path. `/dashboard` itself is always allowed.
  */
 export function canAccess(role: string | null | undefined, pathname: string): boolean {
-  if (pathname === '/dashboard' || pathname === '/dashboard/profile') return true
+  if (
+    pathname === '/dashboard' ||
+    pathname === '/dashboard/profile' ||
+    pathname === '/dashboard/join-class'
+  )
+    return true
   const entries = navForRole(role)
   return entries.some(
     (e) => e.href !== '/dashboard' && pathname.startsWith(e.href),

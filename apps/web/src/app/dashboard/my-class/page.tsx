@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { School } from 'lucide-react'
+import Link from 'next/link'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { InviteParentCard } from '@/components/study/InviteParentCard'
@@ -90,12 +91,19 @@ export default function MyClassPage() {
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : batches.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-12 text-center">
+        <div className="rounded-2xl border border-dashed p-12 text-center">
           <School className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="font-medium">You are not in a batch yet</p>
-          <p className="text-sm text-muted-foreground">
-            Ask the school to add you to a class.
+          <p className="font-medium">You are not in a class yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Have a class code from your teacher? Join to unlock your timetable,
+            grades and study groups.
           </p>
+          <Link
+            href="/dashboard/join-class"
+            className="mk-brand-bg mt-4 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium text-white"
+          >
+            Join a class
+          </Link>
         </div>
       ) : (
         <div className="space-y-8">

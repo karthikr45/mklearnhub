@@ -15,6 +15,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { AddStudentsDto } from './dto/add-students.dto'
 import { CreateBatchDto } from './dto/create-batch.dto'
+import { JoinClassDto } from './dto/join-class.dto'
 import { CreateTimetableDto } from './dto/create-timetable.dto'
 import { LinkParentDto } from './dto/link-parent.dto'
 import { MarkAttendanceDto } from './dto/mark-attendance.dto'
@@ -36,6 +37,11 @@ export class SchoolController {
   @Get('me/overview')
   getStudentOverview(@CurrentUser() user: JwtPayload) {
     return this.school.getStudentOverview(user.sub)
+  }
+
+  @Post('join')
+  joinClass(@Body() dto: JoinClassDto, @CurrentUser() user: JwtPayload) {
+    return this.school.joinByCode(user.sub, dto.code)
   }
 
   @Post('batches')

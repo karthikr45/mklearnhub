@@ -134,11 +134,19 @@ export function LearnerHome() {
         title={`Hi${user?.name ? `, ${firstName(user.name)}` : ''}`}
         description="Pick up where you left off."
       />
-      <div className="mb-6 flex gap-3">
+      <div className="mb-6 flex flex-wrap gap-3">
         <Link href="/dashboard/explore" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
           Explore courses
         </Link>
         <Link href="/dashboard/learning" className="rounded-md border px-4 py-2 text-sm">My learning</Link>
+        {user?.role === 'LEARNER' && (
+          <Link
+            href="/dashboard/join-class"
+            className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+          >
+            <Users className="h-4 w-4" /> Join a class
+          </Link>
+        )}
       </div>
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

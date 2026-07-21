@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -19,6 +20,57 @@ import { TimetableSlotDto } from './dto/create-timetable.dto'
 @Injectable()
 export class SchoolService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * A learner/student joins a class by its code, any time after registering.
+   * Maps them to the school + batch + academic year (upgrading a LEARNER to
+   * STUDENT), unlocking collaboration. The code is the verification gate.
+   */
+  async joinByCode(userId: string, rawCode: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    })
+    if (!user) throw new NotFoundException('User not found')
+    if (!['LEARNER', 'STUDENT'].includes(user.role)) {
+      throw new ForbiddenException('Only learners and students can join a class')
+    }
+
+    const code = rawCode.trim().toUpperCase()
+    const batch = await this.prisma.batch.findUnique({
+      where: { joinCode: code },
+      include: { organization: { select: { id: true, name: true } } },
+    })
+    if (!batch) throw new BadRequestException('Invalid class join code')
+
+    const already = await this.prisma.batchStudent.findUnique({
+      where: { batchId_userId: { batchId: batch.id, userId } },
+    })
+    if (!already) {
+      if (batch.maxStudents) {
+        const count = await this.prisma.batchStudent.count({
+          where: { batchId: batch.id },
+        })
+        if (count >= batch.maxStudents) {
+          throw new BadRequestException('This class is full')
+        }
+      }
+      await this.prisma.batchStudent.create({
+        data: { batchId: batch.id, userId },
+      })
+    }
+    // Upgrade a self-study learner into a school student.
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: 'STUDENT', organizationId: batch.organizationId },
+    })
+
+    return {
+      success: true,
+      schoolName: batch.organization.name,
+      className: batch.name,
+    }
+  }
 
   async getStudentOverview(userId: string) {
     const memberships = await this.prisma.batchStudent.findMany({
