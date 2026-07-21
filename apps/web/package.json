@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "hls.js": "^1.5.17",
+    "katex": "^0.18.1",
     "lucide-react": "^0.454.0",
     "next": "^15.0.2",
     "next-themes": "^0.3.0",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@learnhub/config": "workspace:*",
+    "@types/katex": "^0.16.8",
     "@types/node": "^20.16.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",

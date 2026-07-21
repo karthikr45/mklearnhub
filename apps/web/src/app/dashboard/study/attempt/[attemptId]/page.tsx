@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import Link from 'next/link'
+
+import { MathText } from '@/components/study/MathText'
 import { useParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -113,7 +115,7 @@ export default function AttemptPage() {
             {q.topic}
           </span>
         )}
-        <p className="text-lg font-medium">{q.text}</p>
+        <p className="text-lg font-medium"><MathText text={q.text} /></p>
         <div className="mt-5 space-y-2.5">
           {opts.map((o) => {
             const selected = answers[q.id] === o.id
@@ -134,7 +136,7 @@ export default function AttemptPage() {
                 >
                   {o.id}
                 </span>
-                {o.text}
+                <MathText text={o.text} />
               </button>
             )
           })}
@@ -282,7 +284,7 @@ function Results({ attempt }: { attempt: Attempt }) {
                   {q.isCorrect ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                 </span>
                 <p className="text-sm font-medium">
-                  {i + 1}. {q.text}
+                  {i + 1}. <MathText text={q.text} />
                 </p>
               </div>
               <div className="mt-3 space-y-1.5 pl-7">
@@ -300,7 +302,7 @@ function Results({ attempt }: { attempt: Attempt }) {
                             : ''
                       }`}
                     >
-                      <span className="font-semibold uppercase">{o.id}.</span> {o.text}
+                      <span className="font-semibold uppercase">{o.id}.</span> <MathText text={o.text} />
                       {isCorrect && (
                         <span className="ml-2 text-xs font-medium">✓ correct</span>
                       )}
@@ -314,7 +316,7 @@ function Results({ attempt }: { attempt: Attempt }) {
               {q.explanation && (
                 <p className="mt-3 rounded-md bg-muted/50 p-3 pl-3 text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">Explanation: </span>
-                  {q.explanation}
+                  <MathText text={q.explanation ?? ''} />
                 </p>
               )}
             </div>

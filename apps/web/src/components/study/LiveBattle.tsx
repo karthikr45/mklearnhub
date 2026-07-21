@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { api } from '@/lib/api'
+import { MathText } from '@/components/study/MathText'
 import { getStudySocket } from '@/lib/studySocket'
 import { useAuthStore } from '@/lib/store'
 
@@ -207,7 +208,7 @@ export function LiveBattle({ groupId }: { groupId: string }) {
         <p className="mb-1 text-xs text-muted-foreground">
           Question {question.index + 1} of {question.total}
         </p>
-        <p className="text-lg font-medium">{question.question.text}</p>
+        <p className="text-lg font-medium"><MathText text={question.question.text} /></p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {question.question.options.map((o) => (
             <button
@@ -218,7 +219,7 @@ export function LiveBattle({ groupId }: { groupId: string }) {
                 answered === o.id ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'hover:bg-accent'
               }`}
             >
-              <span className="font-semibold uppercase">{o.id}.</span> {o.text}
+              <span className="font-semibold uppercase">{o.id}.</span> <MathText text={o.text} />
             </button>
           ))}
         </div>
