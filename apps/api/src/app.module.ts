@@ -21,6 +21,7 @@ import { DoubtsModule } from './modules/doubts/doubts.module'
 import { GamificationModule } from './modules/gamification/gamification.module'
 import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
+import { PushModule } from './modules/push/push.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
 import { PortalsModule } from './modules/portals/portals.module'
 import { PublicApiModule } from './modules/public-api/public-api.module'
@@ -63,6 +64,7 @@ import { PrismaModule } from './prisma/prisma.module'
     StorageModule,
     VideoModule,
     NotificationsModule,
+    PushModule,
     BillingModule,
     SearchModule,
     SsoModule,

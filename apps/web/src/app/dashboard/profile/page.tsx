@@ -5,6 +5,7 @@ import { Building2, Download, Mail, ShieldCheck, Trash2, User } from 'lucide-rea
 import Link from 'next/link'
 
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PushToggle } from '@/components/notifications/PushToggle'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/lib/store'
 
@@ -74,6 +75,13 @@ export default function ProfilePage() {
           Profile fields are read-only. Contact an administrator to update your
           details.
         </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
+          Notifications
+        </h2>
+        <PushToggle />
       </section>
 
       <section className="card-elevated p-6">

@@ -132,10 +132,28 @@ model User {
   doubts                Doubt[]              @relation("DoubtAuthor")
   doubtAnswers          DoubtAnswer[]        @relation("AnswerAuthor")
   doubtVotes            DoubtVote[]
+  pushSubscriptions     PushSubscription[]
 
   @@index([organizationId])
   @@index([email])
   @@map("users")
+}
+
+/// A browser Web Push subscription (one per device/browser). Used to deliver
+/// notifications when the user is offline. Web Push is optional — without VAPID
+/// keys the app simply never sends, and these rows sit unused.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model Session {
