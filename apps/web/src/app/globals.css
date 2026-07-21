@@ -4,48 +4,51 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* Premium light theme — indigo brand on a faint cool-gray canvas so white
+       cards lift off the page. */
+    --background: 240 33% 99%;
+    --foreground: 240 18% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 240 18% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --popover-foreground: 240 18% 12%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 22% 96%;
+    --secondary-foreground: 240 18% 24%;
+    --muted: 240 22% 96.5%;
+    --muted-foreground: 240 8% 48%;
+    --accent: 243 90% 96.5%;
+    --accent-foreground: 243 62% 45%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 22% 91%;
+    --input: 240 22% 90%;
+    --ring: 243 75% 59%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    /* Deep indigo-slate — richer than flat neutral. */
+    --background: 240 20% 7%;
+    --foreground: 240 20% 96%;
+    --card: 240 17% 10.5%;
+    --card-foreground: 240 20% 96%;
+    --popover: 240 17% 10.5%;
+    --popover-foreground: 240 20% 96%;
+    --primary: 243 82% 70%;
+    --primary-foreground: 240 30% 8%;
+    --secondary: 240 12% 16%;
+    --secondary-foreground: 240 20% 92%;
+    --muted: 240 12% 15%;
+    --muted-foreground: 240 12% 64%;
+    --accent: 243 42% 24%;
+    --accent-foreground: 243 90% 88%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 13% 19%;
+    --input: 240 13% 21%;
+    --ring: 243 82% 70%;
   }
 }
 
@@ -55,6 +58,55 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Slim, unobtrusive scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+    background-clip: content-box;
+  }
+}
+
+/* ── Premium shared surface utilities (opt-in, used by the shell) ── */
+@layer components {
+  .card-elevated {
+    @apply rounded-2xl border bg-card;
+    box-shadow:
+      0 1px 2px -1px hsl(240 30% 20% / 0.08),
+      0 4px 16px -4px hsl(240 30% 20% / 0.06);
+  }
+  .card-elevated-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-elevated-hover:hover {
+    box-shadow:
+      0 2px 4px -1px hsl(243 60% 40% / 0.1),
+      0 12px 28px -6px hsl(243 60% 40% / 0.12);
+    transform: translateY(-2px);
+  }
+  .btn-brand {
+    @apply mk-brand-bg text-white shadow-sm;
+    box-shadow: 0 2px 8px -2px hsl(243 75% 59% / 0.5);
   }
 }
 

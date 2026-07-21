@@ -74,7 +74,7 @@ export function AdminHome() {
           { href: '/dashboard/members', label: 'Invite members' },
           { href: '/dashboard/analytics', label: 'View analytics' },
         ].map((a) => (
-          <Link key={a.href} href={a.href} className="rounded-lg border bg-card p-5 hover:shadow-sm">
+          <Link key={a.href} href={a.href} className="card-elevated card-elevated-hover p-5">
             <p className="font-medium">{a.label}</p>
           </Link>
         ))}
@@ -110,7 +110,7 @@ export function InstructorHome() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {mine.map((c) => (
-            <Link key={c.id} href={`/dashboard/courses/${c.id}`} className="rounded-lg border bg-card p-5 hover:shadow-sm">
+            <Link key={c.id} href={`/dashboard/courses/${c.id}`} className="card-elevated card-elevated-hover p-5">
               <h3 className="font-semibold">{c.title}</h3>
               <span className="mt-2 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs">{c.status}</span>
             </Link>
@@ -153,7 +153,7 @@ export function LearnerHome() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {enrollments.map((e) => (
-            <Link key={e.id} href={`/dashboard/courses/${e.course.id}`} className="rounded-lg border bg-card p-5 hover:shadow-sm">
+            <Link key={e.id} href={`/dashboard/courses/${e.course.id}`} className="card-elevated card-elevated-hover p-5">
               <h3 className="font-semibold">{e.course.title}</h3>
               <div className="mt-3 h-2 rounded-full bg-muted">
                 <div className="h-2 rounded-full bg-primary" style={{ width: `${e.progressPct}%` }} />
@@ -188,7 +188,7 @@ export function ParentHome() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {children.map((c) => (
-            <Link key={c.id} href={`/dashboard/children/${c.id}`} className="rounded-lg border bg-card p-5 hover:shadow-sm">
+            <Link key={c.id} href={`/dashboard/children/${c.id}`} className="card-elevated card-elevated-hover p-5">
               <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-lg font-semibold">
                 {c.name.charAt(0)}
               </div>

@@ -114,7 +114,7 @@ export default function StudyHubPage() {
             <Link
               key={s.id}
               href={`/dashboard/study/subjects/${s.id}`}
-              className="group rounded-lg border bg-card p-5 transition hover:shadow-md"
+              className="group card-elevated card-elevated-hover p-5"
             >
               <div className="flex items-center justify-between">
                 <span
@@ -146,7 +146,7 @@ export default function StudyHubPage() {
           </h2>
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tests.map((t) => (
-              <div key={t.id} className="rounded-lg border bg-card p-5">
+              <div key={t.id} className="card-elevated p-5">
                 <h3 className="font-semibold">{t.title}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t.questionCount} questions
