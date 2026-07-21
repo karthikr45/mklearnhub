@@ -9,6 +9,7 @@ import {
   GraduationCap,
   HelpCircle,
   Home,
+  Layers,
   LayoutDashboard,
   MessagesSquare,
   PenTool,
@@ -46,6 +47,7 @@ const ICONS: Record<string, LucideIcon> = {
   help: HelpCircle,
   trophy: Trophy,
   pen: PenTool,
+  layers: Layers,
 }
 
 export function Sidebar() {

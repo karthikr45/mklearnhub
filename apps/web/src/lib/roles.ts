@@ -43,6 +43,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard/my-class', label: 'My Class', icon: 'school', roles: ['STUDENT'] },
   // Self-study practice is open to individual learners too (global curriculum).
   { href: '/dashboard/study', label: 'Practice', icon: 'target', roles: LEARNER_ROLES },
+  { href: '/dashboard/flashcards', label: 'Flashcards', icon: 'layers', roles: LEARNER_ROLES },
   { href: '/dashboard/whiteboard', label: 'Whiteboard', icon: 'pen', roles: LEARNER_ROLES },
   { href: '/dashboard/groups', label: 'Study Groups', icon: 'messages', roles: ['STUDENT'] },
   { href: '/dashboard/doubts', label: 'Doubts', icon: 'help', roles: ['STUDENT'] },
