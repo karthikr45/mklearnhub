@@ -51,7 +51,7 @@ export default function ChildrenPage() {
             <Link
               key={child.id}
               href={`/dashboard/children/${child.id}`}
-              className="rounded-lg border bg-card p-5 transition-shadow hover:shadow-md"
+              className="card-elevated card-elevated-hover p-5"
             >
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                 <Users className="h-6 w-6 text-muted-foreground" />

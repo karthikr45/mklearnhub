@@ -82,7 +82,7 @@ export default function CreateCoursePage() {
 
       <form
         onSubmit={handleSubmit}
-        className="max-w-2xl space-y-6 rounded-lg border bg-card p-6"
+        className="max-w-2xl space-y-6 card-elevated p-6"
       >
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">

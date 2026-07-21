@@ -75,7 +75,7 @@ export default function GroupsPage() {
       </div>
 
       {creating && (
-        <div className="mb-6 rounded-lg border bg-card p-4">
+        <div className="mb-6 card-elevated p-4">
           <h3 className="mb-3 text-sm font-semibold">Create a study group</h3>
           <div className="space-y-3">
             <input
@@ -122,7 +122,7 @@ export default function GroupsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
-            <div key={g.id} className="flex flex-col rounded-lg border bg-card p-5">
+            <div key={g.id} className="flex flex-col card-elevated p-5">
               <div className="flex items-start justify-between">
                 <h3 className="font-semibold">{g.name}</h3>
                 {g.gradeLabel && (

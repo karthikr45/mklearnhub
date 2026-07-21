@@ -244,7 +244,7 @@ export default function CourseDetailPage() {
               order: course.chapters.length,
             })
           }}
-          className="mb-4 flex gap-2 rounded-lg border bg-card p-4"
+          className="mb-4 flex gap-2 card-elevated p-4"
         >
           <input
             value={chapterTitle}
@@ -280,7 +280,7 @@ export default function CourseDetailPage() {
               return (
                 <div
                   key={chapter.id}
-                  className="overflow-hidden rounded-lg border bg-card"
+                  className="overflow-hidden card-elevated"
                 >
                   <button
                     onClick={() =>

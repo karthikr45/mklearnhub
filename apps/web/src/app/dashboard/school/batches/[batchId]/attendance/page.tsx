@@ -123,7 +123,7 @@ export default function AttendancePage() {
         }
       />
 
-      <div className="mb-6 flex flex-wrap items-end gap-4 rounded-lg border bg-card p-5">
+      <div className="mb-6 flex flex-wrap items-end gap-4 card-elevated p-5">
         <div>
           <label className="text-xs font-medium text-muted-foreground">
             Date
@@ -149,7 +149,7 @@ export default function AttendancePage() {
         </button>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="card-elevated">
         {isLoading ? (
           <p className="p-5 text-sm text-muted-foreground">Loading…</p>
         ) : students.length === 0 ? (
@@ -207,7 +207,7 @@ export default function AttendancePage() {
       </div>
 
       {recentByDate.length > 0 ? (
-        <div className="mt-6 rounded-lg border bg-card p-5">
+        <div className="mt-6 card-elevated p-5">
           <h3 className="mb-3 font-semibold">Recent attendance</h3>
           <ul className="space-y-2 text-sm">
             {recentByDate.map(([day, count]) => (

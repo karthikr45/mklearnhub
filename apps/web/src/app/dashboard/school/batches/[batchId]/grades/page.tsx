@@ -133,7 +133,7 @@ export default function GradesPage() {
         </div>
       ) : (
         <>
-          <div className="mb-6 flex flex-wrap items-end gap-4 rounded-lg border bg-card p-5">
+          <div className="mb-6 flex flex-wrap items-end gap-4 card-elevated p-5">
             <div className="min-w-56">
               <label className="text-xs font-medium text-muted-foreground">
                 Student
@@ -159,7 +159,7 @@ export default function GradesPage() {
           </div>
 
           {showForm ? (
-            <div className="mb-6 rounded-lg border bg-card p-5">
+            <div className="mb-6 card-elevated p-5">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
@@ -228,7 +228,7 @@ export default function GradesPage() {
             </div>
           ) : null}
 
-          <div className="rounded-lg border bg-card">
+          <div className="card-elevated">
             {isLoading ? (
               <p className="p-5 text-sm text-muted-foreground">Loading…</p>
             ) : !grades || grades.length === 0 ? (

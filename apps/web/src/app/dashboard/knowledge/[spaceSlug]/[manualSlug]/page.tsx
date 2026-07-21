@@ -121,7 +121,7 @@ export default function ManualDetailPage() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="mb-6 rounded-lg border bg-card p-5"
+          className="mb-6 card-elevated p-5"
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold">New article</h2>

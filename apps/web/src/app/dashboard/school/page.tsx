@@ -36,21 +36,21 @@ export default function SchoolPage() {
       />
 
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card p-5">
+        <div className="card-elevated p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Batches</p>
             <Users className="h-4 w-4 text-muted-foreground" />
           </div>
           <p className="mt-2 text-2xl font-bold">{batchCount}</p>
         </div>
-        <div className="rounded-lg border bg-card p-5">
+        <div className="card-elevated p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Active batches</p>
             <CalendarCheck className="h-4 w-4 text-muted-foreground" />
           </div>
           <p className="mt-2 text-2xl font-bold">{activeCount}</p>
         </div>
-        <div className="rounded-lg border bg-card p-5">
+        <div className="card-elevated p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Enrolled students</p>
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -62,7 +62,7 @@ export default function SchoolPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
           href="/dashboard/school/batches"
-          className="rounded-lg border bg-card p-6 transition-shadow hover:shadow-md"
+          className="card-elevated card-elevated-hover p-6"
         >
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Users className="h-5 w-5" />
@@ -72,7 +72,7 @@ export default function SchoolPage() {
             Create batches, enroll students, and manage classes.
           </p>
         </Link>
-        <div className="rounded-lg border bg-card p-6">
+        <div className="card-elevated p-6">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
             <ClipboardList className="h-5 w-5" />
           </div>

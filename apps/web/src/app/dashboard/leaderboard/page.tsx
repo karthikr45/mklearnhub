@@ -119,7 +119,7 @@ export default function LeaderboardPage() {
 
 function Stat({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="card-elevated p-4">
       <div className="flex items-center gap-1.5">{icon}</div>
       <div className="mt-2 text-2xl font-bold">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>

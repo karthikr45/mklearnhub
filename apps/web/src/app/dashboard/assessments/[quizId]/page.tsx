@@ -189,7 +189,7 @@ export default function QuizAttemptPage() {
         {questions.map((q, idx) => {
           const state = answers[q.id]
           return (
-            <div key={q.id} className="rounded-lg border bg-card p-5">
+            <div key={q.id} className="card-elevated p-5">
               <div className="mb-3 flex items-start justify-between gap-4">
                 <p className="font-medium">
                   {idx + 1}. {q.text}

@@ -244,7 +244,7 @@ function Results({ attempt }: { attempt: Attempt }) {
           <h3 className="mb-2 text-sm font-semibold">By topic</h3>
           <div className="space-y-2">
             {byTopic.map((t) => (
-              <div key={t.topic} className="rounded-lg border bg-card p-3">
+              <div key={t.topic} className="card-elevated p-3">
                 <div className="flex items-center justify-between text-sm">
                   <span>{t.topic}</span>
                   <span className="text-muted-foreground">
@@ -272,7 +272,7 @@ function Results({ attempt }: { attempt: Attempt }) {
           const your = q.yourAnswer as string | undefined
           const correct = q.correctAnswer as string | undefined
           return (
-            <div key={q.id} className="rounded-lg border bg-card p-4">
+            <div key={q.id} className="card-elevated p-4">
               <div className="flex items-start gap-2">
                 <span
                   className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white ${

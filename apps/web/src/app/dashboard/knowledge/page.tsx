@@ -82,7 +82,7 @@ export default function KnowledgePage() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="mb-6 rounded-lg border bg-card p-5"
+          className="mb-6 card-elevated p-5"
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold">New space</h2>
@@ -161,7 +161,7 @@ export default function KnowledgePage() {
             <Link
               key={space.id}
               href={`/dashboard/knowledge/${space.id}`}
-              className="rounded-lg border bg-card p-5 transition-shadow hover:shadow-md"
+              className="card-elevated card-elevated-hover p-5"
             >
               <div className="mb-3 text-3xl">{space.iconEmoji ?? '📘'}</div>
               <h3 className="font-semibold">{space.name}</h3>

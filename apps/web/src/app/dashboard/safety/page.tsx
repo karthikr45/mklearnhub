@@ -47,12 +47,12 @@ export default function SafetyPage() {
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:max-w-md">
-        <div className="rounded-lg border bg-card p-4">
+        <div className="card-elevated p-4">
           <ShieldAlert className="h-5 w-5 text-destructive" />
           <div className="mt-2 text-2xl font-bold">{blocked}</div>
           <div className="text-xs text-muted-foreground">Blocked</div>
         </div>
-        <div className="rounded-lg border bg-card p-4">
+        <div className="card-elevated p-4">
           <ShieldCheck className="h-5 w-5 text-amber-500" />
           <div className="mt-2 text-2xl font-bold">{flagged}</div>
           <div className="text-xs text-muted-foreground">Flagged for review</div>

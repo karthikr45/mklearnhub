@@ -182,7 +182,7 @@ export default function StudyHubPage() {
               <Link
                 key={h.id}
                 href={`/dashboard/study/attempt/${h.id}`}
-                className="flex items-center justify-between rounded-lg border bg-card p-3.5 hover:shadow-sm"
+                className="flex items-center justify-between card-elevated card-elevated-hover p-3.5"
               >
                 <div>
                   <p className="text-sm font-medium">{h.title}</p>

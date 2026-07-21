@@ -61,7 +61,7 @@ export default function SubjectPage() {
           {subject.chapters.map((c) => (
             <div
               key={c.id}
-              className="flex items-center justify-between rounded-lg border bg-card p-4"
+              className="flex items-center justify-between card-elevated p-4"
             >
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">

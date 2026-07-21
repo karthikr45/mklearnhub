@@ -179,7 +179,7 @@ export default function LessonPlayerPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div>
-          <div className="rounded-lg border bg-card p-4">
+          <div className="card-elevated p-4">
             {currentLesson.videoUrl ? (
               <VideoPlayer src={currentLesson.videoUrl} />
             ) : (
@@ -248,7 +248,7 @@ export default function LessonPlayerPage() {
           </button>
         </div>
 
-        <aside className="rounded-lg border bg-card">
+        <aside className="card-elevated">
           <div className="border-b px-4 py-3 text-sm font-semibold">
             Course content
           </div>

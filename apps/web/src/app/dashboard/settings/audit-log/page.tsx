@@ -87,7 +87,7 @@ export default function AuditLogPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4">
+      <div className="mb-4 flex flex-wrap items-end gap-3 card-elevated p-4">
         <div className="min-w-[200px] flex-1">
           <label className="text-xs font-medium text-muted-foreground">
             User

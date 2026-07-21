@@ -144,7 +144,7 @@ export default function MembersPage() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg"
+            className="w-full max-w-md card-elevated p-6 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">

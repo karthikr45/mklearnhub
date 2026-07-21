@@ -257,7 +257,7 @@ function UsagePanel({ keyId }: { keyId: string }) {
   const series = data && data.length > 0 ? data : placeholder
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="card-elevated p-4">
       <h4 className="mb-3 text-sm font-semibold">Requests over time</h4>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={series}>
@@ -324,7 +324,7 @@ function CreateKeyModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-lg card-elevated p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Create API key</h3>
           <button onClick={onClose} className="text-muted-foreground">
@@ -451,7 +451,7 @@ function RawKeyModal({
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md card-elevated p-6 shadow-lg">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold">Your new API key</h3>

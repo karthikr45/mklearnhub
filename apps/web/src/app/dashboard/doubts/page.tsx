@@ -77,7 +77,7 @@ export default function DoubtsPage() {
       </div>
 
       {asking && (
-        <div className="mb-6 rounded-lg border bg-card p-4">
+        <div className="mb-6 card-elevated p-4">
           <input
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -134,7 +134,7 @@ export default function DoubtsPage() {
             <Link
               key={d.id}
               href={`/dashboard/doubts/${d.id}`}
-              className="block rounded-lg border bg-card p-4 hover:shadow-sm"
+              className="block card-elevated card-elevated-hover p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-medium">{d.title}</h3>

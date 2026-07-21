@@ -71,7 +71,7 @@ export default function QuizResultsPage() {
       <PageHeader title="Quiz Results" description="Your latest attempt." />
 
       <div className="max-w-3xl space-y-6">
-        <div className="rounded-lg border bg-card p-6">
+        <div className="card-elevated p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Your score</p>

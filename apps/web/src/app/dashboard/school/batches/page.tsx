@@ -87,7 +87,7 @@ export default function BatchesPage() {
       />
 
       {showForm && (
-        <div className="mb-6 rounded-lg border bg-card p-5">
+        <div className="mb-6 card-elevated p-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium text-muted-foreground">Class name</label>
@@ -154,7 +154,7 @@ export default function BatchesPage() {
             <Link
               key={batch.id}
               href={`/dashboard/school/batches/${batch.id}`}
-              className="rounded-lg border bg-card p-5 transition-shadow hover:shadow-md"
+              className="card-elevated card-elevated-hover p-5"
             >
               <div className="mb-2 flex items-start justify-between gap-2">
                 <h3 className="font-semibold">{batch.name}</h3>

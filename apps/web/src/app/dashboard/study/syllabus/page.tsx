@@ -64,7 +64,7 @@ export default function SyllabusPage() {
       ) : (
         <div className="space-y-6">
           {subjects?.map((s) => (
-            <div key={s.id} className="rounded-lg border bg-card p-5">
+            <div key={s.id} className="card-elevated p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span

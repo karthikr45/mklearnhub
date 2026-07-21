@@ -204,7 +204,7 @@ export default function BatchDetailPage() {
           <Link
             key={href}
             href={href}
-            className="flex items-center gap-3 rounded-lg border bg-card p-4 transition-shadow hover:shadow-md"
+            className="flex items-center gap-3 card-elevated card-elevated-hover p-4"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
               <Icon className="h-4 w-4" />
@@ -215,7 +215,7 @@ export default function BatchDetailPage() {
       </div>
 
       {showAdd ? (
-        <div className="mb-6 rounded-lg border bg-card p-5">
+        <div className="mb-6 card-elevated p-5">
           <h3 className="mb-3 font-semibold">Add students to this batch</h3>
           {!orgId ? (
             <p className="text-sm text-muted-foreground">
@@ -267,7 +267,7 @@ export default function BatchDetailPage() {
         </div>
       ) : null}
 
-      <div className="rounded-lg border bg-card">
+      <div className="card-elevated">
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <Users className="h-4 w-4 text-muted-foreground" />
           <h3 className="font-semibold">

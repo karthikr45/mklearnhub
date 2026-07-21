@@ -91,7 +91,7 @@ export default function PortalsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {portals.map((p) => (
-            <div key={p.id} className="rounded-lg border bg-card p-5">
+            <div key={p.id} className="card-elevated p-5">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="font-semibold">{p.name}</h3>
                 <span

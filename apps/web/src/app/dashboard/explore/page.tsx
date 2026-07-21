@@ -75,7 +75,7 @@ export default function ExplorePage() {
             return (
               <div
                 key={course.id}
-                className="flex flex-col rounded-lg border bg-card p-5"
+                className="flex flex-col card-elevated p-5"
               >
                 <div className="mb-3 flex h-28 items-center justify-center rounded-md bg-muted">
                   <GraduationCap className="h-8 w-8 text-muted-foreground" />

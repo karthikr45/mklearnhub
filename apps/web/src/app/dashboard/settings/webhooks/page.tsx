@@ -93,7 +93,7 @@ export default function WebhooksPage() {
       ) : (
         <div className="space-y-4">
           {webhooks.map((hook) => (
-            <div key={hook.id} className="rounded-lg border bg-card">
+            <div key={hook.id} className="card-elevated">
               <div className="flex items-center justify-between gap-4 p-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
@@ -265,7 +265,7 @@ function AddWebhookModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto card-elevated p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Add webhook</h3>
           <button onClick={onClose} className="text-muted-foreground">

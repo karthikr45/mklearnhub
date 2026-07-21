@@ -105,7 +105,7 @@ export default function MyClassPage() {
             </h2>
             <div className="flex flex-wrap gap-3">
               {batches.map((batch) => (
-                <div key={batch.id} className="rounded-lg border bg-card p-4">
+                <div key={batch.id} className="card-elevated p-4">
                   <p className="font-medium">{batch.name}</p>
                   {batch.academicYear && (
                     <p className="text-xs text-muted-foreground">
@@ -212,13 +212,13 @@ export default function MyClassPage() {
                 Attendance
               </h2>
               <div className="flex flex-wrap gap-4">
-                <div className="rounded-lg border bg-card p-4">
+                <div className="card-elevated p-4">
                   <p className="text-2xl font-bold">
                     {Math.round(attendance.rate)}%
                   </p>
                   <p className="text-xs text-muted-foreground">Attendance rate</p>
                 </div>
-                <div className="rounded-lg border bg-card p-4">
+                <div className="card-elevated p-4">
                   <p className="text-2xl font-bold">
                     {attendance.present}/{attendance.total}
                   </p>

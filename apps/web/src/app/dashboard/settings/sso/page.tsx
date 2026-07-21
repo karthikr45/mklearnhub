@@ -232,7 +232,7 @@ export default function SsoPage() {
                 key={p.id}
                 onClick={() => setProvider(p.id)}
                 className={cn(
-                  'flex flex-col items-start gap-2 rounded-lg border bg-card p-5 text-left transition-colors hover:border-primary',
+                  'flex flex-col items-start gap-2 card-elevated p-5 text-left transition-colors hover:border-primary',
                   selected && 'border-primary ring-1 ring-primary',
                 )}
               >
@@ -256,7 +256,7 @@ export default function SsoPage() {
 
       {step === 2 ? (
         <div className="space-y-6">
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <div className="mb-4 inline-flex rounded-md border p-1">
               <button
                 onClick={() => setSourceMode('metadata')}
@@ -308,7 +308,7 @@ export default function SsoPage() {
             )}
           </div>
 
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Attribute mapping</h3>
             <div className="overflow-hidden rounded-lg border">
               <table className="w-full text-sm">
@@ -372,7 +372,7 @@ export default function SsoPage() {
 
       {step === 3 ? (
         <div className="space-y-6">
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Service provider metadata</h3>
             <div className="space-y-3">
               <div>
@@ -404,7 +404,7 @@ export default function SsoPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold">Test connection</h3>
               <StatusBadge status={testStatus} />
@@ -430,7 +430,7 @@ export default function SsoPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border bg-card p-6">
+          <div className="flex items-center justify-between card-elevated p-6">
             <div>
               <h3 className="font-semibold">Activate SSO</h3>
               <p className="text-sm text-muted-foreground">

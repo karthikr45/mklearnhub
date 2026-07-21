@@ -132,7 +132,7 @@ export default function TimetablePage() {
       />
 
       {showForm ? (
-        <div className="mb-6 rounded-lg border bg-card p-5">
+        <div className="mb-6 card-elevated p-5">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
               <label className="text-xs font-medium text-muted-foreground">
@@ -224,7 +224,7 @@ export default function TimetablePage() {
             {DAYS.map((d) => {
               const daySlots = byDay(d.index)
               return (
-                <div key={d.index} className="rounded-lg border bg-card">
+                <div key={d.index} className="card-elevated">
                   <div className="border-b bg-muted/50 px-3 py-2 text-sm font-semibold">
                     {d.label}
                   </div>

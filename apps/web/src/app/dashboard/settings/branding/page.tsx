@@ -123,7 +123,7 @@ export default function BrandingPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Logo</h3>
             <label className="text-xs font-medium text-muted-foreground">
               Logo URL
@@ -146,7 +146,7 @@ export default function BrandingPage() {
             ) : null}
           </div>
 
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Colors</h3>
             <div className="grid grid-cols-3 gap-4">
               <ColorField
@@ -167,7 +167,7 @@ export default function BrandingPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Typography</h3>
             <label className="text-xs font-medium text-muted-foreground">
               Font family
@@ -185,7 +185,7 @@ export default function BrandingPage() {
             </select>
           </div>
 
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Custom domain</h3>
             <label className="text-xs font-medium text-muted-foreground">
               Domain
@@ -212,7 +212,7 @@ export default function BrandingPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Custom CSS</h3>
             <textarea
               value={customCss}
@@ -223,7 +223,7 @@ export default function BrandingPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border bg-card p-6">
+          <div className="flex items-center justify-between card-elevated p-6">
             <div>
               <h3 className="font-semibold">Hide LearnHub branding</h3>
               <p className="text-sm text-muted-foreground">
@@ -251,7 +251,7 @@ export default function BrandingPage() {
         </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-lg border bg-card p-6">
+          <div className="card-elevated p-6">
             <h3 className="mb-4 font-semibold">Live preview</h3>
             <div
               style={previewStyle}

@@ -43,7 +43,7 @@ export default function ProfilePage() {
     <div>
       <PageHeader title="Profile" description="Your account details." />
 
-      <section className="mb-8 rounded-lg border bg-card p-6">
+      <section className="mb-8 card-elevated p-6">
         <div className="mb-6 flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
             {(name || '?').slice(0, 1).toUpperCase()}
@@ -76,7 +76,7 @@ export default function ProfilePage() {
         </p>
       </section>
 
-      <section className="rounded-lg border bg-card p-6">
+      <section className="card-elevated p-6">
         <h2 className="mb-1 text-lg font-semibold">Privacy &amp; Data</h2>
         <p className="mb-5 text-sm text-muted-foreground">
           Download a copy of your data or request account deletion.

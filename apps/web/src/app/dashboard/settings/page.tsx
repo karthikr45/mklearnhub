@@ -98,7 +98,7 @@ export default function SettingsPage() {
           <Link
             key={href}
             href={href}
-            className="rounded-lg border bg-card p-5 transition-shadow hover:shadow-md"
+            className="card-elevated card-elevated-hover p-5"
           >
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
               <Icon className="h-5 w-5" />

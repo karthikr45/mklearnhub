@@ -38,7 +38,7 @@ export default function AnalyticsPage() {
         description="Enrollment and completion trends."
       />
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border bg-card p-6">
+        <div className="card-elevated p-6">
           <h3 className="mb-4 font-semibold">Enrollments</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={enrollmentData}>
@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="rounded-lg border bg-card p-6">
+        <div className="card-elevated p-6">
           <h3 className="mb-4 font-semibold">Completion rate</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={completionData}>

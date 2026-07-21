@@ -125,7 +125,7 @@ export default function IntegrationsPage() {
         description="Sync your HRMS and import data in bulk."
       />
 
-      <section className="mb-8 rounded-lg border bg-card p-6">
+      <section className="mb-8 card-elevated p-6">
         <h2 className="mb-1 text-lg font-semibold">HRMS sync</h2>
         <p className="mb-5 text-sm text-muted-foreground">
           Connect your HR system to keep members in sync.
@@ -262,7 +262,7 @@ export default function IntegrationsPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border bg-card p-6">
+      <section className="card-elevated p-6">
         <div className="mb-1 flex items-center gap-2">
           <Upload className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Bulk CSV import</h2>
@@ -347,7 +347,7 @@ function SecretModal({
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md card-elevated p-6 shadow-lg">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold">Webhook secret</h3>

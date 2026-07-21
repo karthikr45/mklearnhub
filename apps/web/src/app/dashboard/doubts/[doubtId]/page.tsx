@@ -89,7 +89,7 @@ export default function DoubtDetailPage() {
         <ArrowLeft className="h-4 w-4" /> All doubts
       </Link>
 
-      <div className="rounded-lg border bg-card p-5">
+      <div className="card-elevated p-5">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-xl font-semibold">{doubt.title}</h1>
           {doubt.isResolved && (
@@ -152,7 +152,7 @@ export default function DoubtDetailPage() {
         ))}
       </div>
 
-      <div className="mt-6 rounded-lg border bg-card p-4">
+      <div className="mt-6 card-elevated p-4">
         <h3 className="mb-2 text-sm font-semibold">Your answer</h3>
         <textarea
           value={answer}

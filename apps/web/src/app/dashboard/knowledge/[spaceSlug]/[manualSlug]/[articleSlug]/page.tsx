@@ -136,7 +136,7 @@ export default function ArticleDetailPage() {
           <p className="font-medium">Article not found</p>
         </div>
       ) : editing ? (
-        <form onSubmit={handleSave} className="rounded-lg border bg-card p-5">
+        <form onSubmit={handleSave} className="card-elevated p-5">
           <h2 className="mb-4 font-semibold">Edit article</h2>
           <div>
             <label className="mb-1 block text-sm font-medium">Title</label>
@@ -213,7 +213,7 @@ export default function ArticleDetailPage() {
             </span>
           </div>
 
-          <article className="rounded-lg border bg-card p-6">
+          <article className="card-elevated p-6">
             {paragraphs.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 This article has no content yet.

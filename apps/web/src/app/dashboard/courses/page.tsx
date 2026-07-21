@@ -40,7 +40,7 @@ export default function CoursesPage() {
             <Link
               key={course.id}
               href={`/dashboard/courses/${course.id}`}
-              className="rounded-lg border bg-card p-5 transition-shadow hover:shadow-md"
+              className="card-elevated card-elevated-hover p-5"
             >
               <div className="mb-3 flex h-28 items-center justify-center rounded-md bg-muted">
                 <GraduationCap className="h-8 w-8 text-muted-foreground" />

@@ -99,7 +99,7 @@ export default function PrivacyPage() {
         description="Manage data-subject requests, your personal data, and retention."
       />
 
-      <section className="mb-8 rounded-lg border bg-card p-6">
+      <section className="mb-8 card-elevated p-6">
         <h2 className="mb-1 text-lg font-semibold">Data subject requests</h2>
         <p className="mb-5 text-sm text-muted-foreground">
           Review export and deletion requests from members.
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
         )}
       </section>
 
-      <section className="mb-8 rounded-lg border bg-card p-6">
+      <section className="mb-8 card-elevated p-6">
         <h2 className="mb-1 text-lg font-semibold">Your data</h2>
         <p className="mb-5 text-sm text-muted-foreground">
           Download a copy of your data or delete your account.
@@ -221,7 +221,7 @@ export default function PrivacyPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border bg-card p-6">
+      <section className="card-elevated p-6">
         <h2 className="mb-1 text-lg font-semibold">Data retention</h2>
         <p className="mb-5 text-sm text-muted-foreground">
           Control how long different kinds of data are kept.
@@ -295,7 +295,7 @@ export default function PrivacyPage() {
 
       {confirmDelete ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+          <div className="w-full max-w-md card-elevated p-6 shadow-lg">
             <div className="mb-3 flex items-center gap-2 text-destructive">
               <ShieldAlert className="h-5 w-5" />
               <h3 className="text-lg font-semibold">Delete your account?</h3>

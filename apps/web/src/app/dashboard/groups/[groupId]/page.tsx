@@ -111,7 +111,7 @@ export default function GroupDetailPage() {
           {group?.members.map((m) => (
             <div
               key={m.user.id}
-              className="flex items-center gap-3 rounded-lg border bg-card p-3"
+              className="flex items-center gap-3 card-elevated p-3"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-semibold">
                 {m.user.name.charAt(0)}
@@ -289,7 +289,7 @@ function ResourcesTab({
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       {/* composer */}
-      <div className="rounded-lg border bg-card p-4">
+      <div className="card-elevated p-4">
         <h3 className="mb-3 text-sm font-semibold">Share study material</h3>
         <div className="mb-3 flex gap-1.5">
           {(['NOTE', 'LINK', 'FILE'] as const).map((t) => (
@@ -364,7 +364,7 @@ function ResourcesTab({
           resources.map((r) => {
             const Icon = icons[r.type]
             return (
-              <div key={r.id} className="rounded-lg border bg-card p-4">
+              <div key={r.id} className="card-elevated p-4">
                 <div className="flex items-center gap-2">
                   <Icon className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">{r.title}</span>

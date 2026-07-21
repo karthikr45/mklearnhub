@@ -86,7 +86,7 @@ export default function SchoolProfilePage() {
         description="Set your board and state, and list your school so students can find it."
       />
 
-      <div className="space-y-5 rounded-lg border bg-card p-6">
+      <div className="space-y-5 card-elevated p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
             <label className="text-sm font-medium">State</label>
