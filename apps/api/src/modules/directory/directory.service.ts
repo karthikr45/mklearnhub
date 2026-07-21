@@ -12,11 +12,14 @@ export const GRADE_OPTIONS = [
 ]
 
 export const BOARD_OPTIONS = [
-  { value: 'TELANGANA_STATE', label: 'Telangana State Board (BSE/BIE TS)' },
-  { value: 'ANDHRA_PRADESH_STATE', label: 'Andhra Pradesh State Board (BSE/BIE AP)' },
+  { value: 'TELANGANA_STATE', label: 'Telangana State Board (SSC)' },
+  { value: 'ANDHRA_PRADESH_STATE', label: 'Andhra Pradesh State Board (SSC)' },
+  { value: 'TELANGANA_INTERMEDIATE', label: 'Telangana Intermediate (BIE TS)' },
+  { value: 'ANDHRA_PRADESH_INTERMEDIATE', label: 'Andhra Pradesh Intermediate (BIE AP)' },
   { value: 'CBSE', label: 'CBSE' },
-  { value: 'ICSE', label: 'ICSE' },
+  { value: 'ICSE', label: 'ICSE / ISC' },
   { value: 'IB', label: 'IB' },
+  { value: 'NIOS', label: 'NIOS' },
   { value: 'OTHER', label: 'Other' },
 ]
 

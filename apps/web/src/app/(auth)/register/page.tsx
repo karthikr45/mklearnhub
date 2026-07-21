@@ -49,8 +49,8 @@ const CHOICES = [
   {
     href: '/register/individual',
     icon: User,
-    title: 'Just me — an individual learner',
-    desc: 'Explore and take public courses on your own.',
+    title: 'Just me — self-study learner',
+    desc: 'Practice for CBSE / Intermediate / JEE / NEET and take public courses.',
   },
 ]
 

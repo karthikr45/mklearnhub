@@ -5,6 +5,7 @@ import {
   CreditCard,
   KeyRound,
   Plug,
+  School,
   ScrollText,
   ShieldCheck,
   Users,
@@ -23,6 +24,12 @@ interface SettingLink {
 }
 
 const links: SettingLink[] = [
+  {
+    href: '/dashboard/settings/school',
+    title: 'School Profile',
+    description: 'State, board and directory listing so students can find you.',
+    icon: School,
+  },
   {
     href: '/dashboard/members',
     title: 'Members',

@@ -742,6 +742,137 @@ async function main() {
     })
   }
 
+  // ─── Global curriculum (organizationId: null) ────────
+  // Available to self-study learners who register directly (no school).
+  const globalCurriculum: SeedSubject[] = [
+    {
+      name: 'Mathematics',
+      grade: 'Class 10 (CBSE)',
+      examTrack: 'BOARD_SSC',
+      color: '#6366f1',
+      chapters: [
+        {
+          name: 'Quadratic Equations',
+          topics: [
+            {
+              name: 'Nature of Roots',
+              questions: [
+                {
+                  text: 'The roots of x² − 5x + 6 = 0 are:',
+                  options: opt('2 and 3', '−2 and −3', '1 and 6', '−1 and −6'),
+                  correct: 'a',
+                  explanation: 'x²−5x+6 = (x−2)(x−3), so x = 2 or 3.',
+                  difficulty: 'EASY',
+                  examTrack: 'BOARD_SSC',
+                },
+                {
+                  text: 'The discriminant of 2x² + 3x + 1 = 0 is:',
+                  options: opt('1', '5', '17', '−7'),
+                  correct: 'a',
+                  explanation: 'b²−4ac = 9 − 8 = 1.',
+                  difficulty: 'MEDIUM',
+                  examTrack: 'BOARD_SSC',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Physics',
+      grade: 'JEE / NEET',
+      examTrack: 'JEE_MAIN',
+      color: '#8b5cf6',
+      chapters: [
+        {
+          name: 'Laws of Motion',
+          topics: [
+            {
+              name: "Newton's Laws",
+              questions: [
+                {
+                  text: 'A 2 kg body under a net force of 10 N accelerates at:',
+                  options: opt('2 m/s²', '5 m/s²', '10 m/s²', '20 m/s²'),
+                  correct: 'b',
+                  explanation: 'a = F/m = 10/2 = 5 m/s².',
+                  difficulty: 'EASY',
+                  examTrack: 'JEE_MAIN',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Biology',
+      grade: 'NEET',
+      examTrack: 'NEET',
+      color: '#10b981',
+      chapters: [
+        {
+          name: 'Cell Biology',
+          topics: [
+            {
+              name: 'Cell Organelles',
+              questions: [
+                {
+                  text: 'The “powerhouse of the cell” is the:',
+                  options: opt('Nucleus', 'Ribosome', 'Mitochondrion', 'Golgi body'),
+                  correct: 'c',
+                  explanation: 'Mitochondria generate ATP — the cell’s energy.',
+                  difficulty: 'EASY',
+                  examTrack: 'NEET',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ]
+
+  for (const [si, subj] of globalCurriculum.entries()) {
+    const subject = await prisma.subject.create({
+      data: {
+        name: subj.name,
+        // organizationId omitted → global / platform-wide
+        grade: subj.grade,
+        examTrack: subj.examTrack as never,
+        color: subj.color,
+        order: 100 + si,
+      },
+    })
+    for (const [ci, ch] of subj.chapters.entries()) {
+      const chapter = await prisma.syllabusChapter.create({
+        data: { subjectId: subject.id, name: ch.name, order: ci },
+      })
+      for (const [ti, top] of ch.topics.entries()) {
+        const topic = await prisma.topic.create({
+          data: { chapterId: chapter.id, name: top.name, order: ti },
+        })
+        for (const q of top.questions) {
+          await prisma.assessmentQuestion.create({
+            data: {
+              subjectId: subject.id,
+              chapterId: chapter.id,
+              topicId: topic.id,
+              examTrack: q.examTrack as never,
+              type: 'MCQ',
+              difficulty: q.difficulty,
+              text: q.text,
+              options: q.options,
+              correctAnswer: q.correct,
+              explanation: q.explanation,
+              marks: 1,
+            },
+          })
+        }
+      }
+    }
+  }
+
   console.warn('✅ Seed complete.')
   console.warn('   Super Admin: admin@learnhub.com / Admin@123')
   console.warn('   Org Admin:   admin@acmecorp.com / Admin@123')

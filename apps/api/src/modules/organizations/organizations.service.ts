@@ -42,7 +42,18 @@ export class OrganizationsService {
 
   async update(id: string, dto: UpdateOrgDto) {
     await this.findById(id)
-    return this.prisma.organization.update({ where: { id }, data: dto })
+    const data: Prisma.OrganizationUpdateInput = {
+      ...(dto.name !== undefined ? { name: dto.name } : {}),
+      ...(dto.logoUrl !== undefined ? { logoUrl: dto.logoUrl } : {}),
+      ...(dto.domain !== undefined ? { domain: dto.domain } : {}),
+      ...(dto.board !== undefined ? { board: dto.board as never } : {}),
+      ...(dto.state !== undefined ? { state: dto.state as never } : {}),
+      ...(dto.city !== undefined ? { city: dto.city } : {}),
+      ...(dto.listedInDirectory !== undefined
+        ? { listedInDirectory: dto.listedInDirectory }
+        : {}),
+    }
+    return this.prisma.organization.update({ where: { id }, data })
   }
 
   async updateSettings(id: string, settings: Prisma.InputJsonValue) {
