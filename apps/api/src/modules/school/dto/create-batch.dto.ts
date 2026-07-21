@@ -7,6 +7,16 @@ export class CreateBatchDto {
   @MinLength(1)
   name!: string
 
+  @ApiPropertyOptional({ description: 'Class/grade, e.g. "Class 10"' })
+  @IsOptional()
+  @IsString()
+  grade?: string
+
+  @ApiPropertyOptional({ description: 'Section, e.g. "A"' })
+  @IsOptional()
+  @IsString()
+  section?: string
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

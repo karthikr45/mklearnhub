@@ -4,8 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
   CalendarDays,
+  Check,
   ClipboardCheck,
+  Copy,
+  KeyRound,
   Loader2,
+  RefreshCw,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -25,6 +29,9 @@ interface Student {
 interface Batch {
   id: string
   name: string
+  grade?: string | null
+  section?: string | null
+  joinCode?: string | null
   isActive: boolean
   students?: Student[]
   academicYear?: { name?: string } | null
@@ -90,6 +97,23 @@ export default function BatchDetailPage() {
     onError: () => toast.error('Could not add students'),
   })
 
+  const [copied, setCopied] = useState(false)
+  const regenerate = useMutation({
+    mutationFn: async () =>
+      (await api.post(`/school/batches/${batchId}/regenerate-code`)).data,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['batch', batchId] })
+      toast.success('New code generated — the old one no longer works')
+    },
+    onError: () => toast.error('Could not regenerate code'),
+  })
+  const copyCode = () => {
+    if (!batch?.joinCode) return
+    void navigator.clipboard.writeText(batch.joinCode)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -137,6 +161,43 @@ export default function BatchDetailPage() {
           </button>
         }
       />
+
+      {/* Join code — students self-register with this */}
+      {batch?.joinCode && (
+        <div className="mb-6 flex flex-col gap-3 rounded-lg border bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <KeyRound className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Class join code — share with students to let them register
+              </p>
+              <p className="font-mono text-lg font-semibold tracking-wide">
+                {batch.joinCode}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={copyCode}
+              className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              onClick={() => regenerate.mutate()}
+              disabled={regenerate.isPending}
+              className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
+              title="Generate a new code (invalidates the current one)"
+            >
+              <RefreshCw className={`h-4 w-4 ${regenerate.isPending ? 'animate-spin' : ''}`} />
+              Regenerate
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {tabs.map(({ href, label, icon: Icon }) => (

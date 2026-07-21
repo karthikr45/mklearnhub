@@ -5,9 +5,14 @@ import {
 } from '@nestjs/common'
 import type { Prisma } from '@learnhub/db'
 
+import { customAlphabet } from 'nanoid'
+
 import { PrismaService } from '../../prisma/prisma.service'
 import { AttendanceEntryDto } from './dto/mark-attendance.dto'
 import { CreateBatchDto } from './dto/create-batch.dto'
+
+// Readable code alphabet — no easily-confused characters (0/O, 1/I).
+const codeSuffix = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 4)
 import { RecordGradeDto } from './dto/record-grade.dto'
 import { TimetableSlotDto } from './dto/create-timetable.dto'
 
@@ -73,18 +78,70 @@ export class SchoolService {
     }
   }
 
+  /** Generate a unique, human-shareable class join code. */
+  private async freshJoinCode(grade?: string | null, section?: string | null) {
+    const base =
+      `${(grade ?? '').replace(/[^0-9A-Za-z]/g, '').slice(-3)}${section ?? ''}`
+        .toUpperCase() || 'CLS'
+    for (let i = 0; i < 6; i++) {
+      const code = `${base}-${codeSuffix()}`
+      const clash = await this.prisma.batch.findUnique({ where: { joinCode: code } })
+      if (!clash) return code
+    }
+    // Extremely unlikely fallback
+    return `CLS-${codeSuffix()}${codeSuffix()}`
+  }
+
+  /**
+   * Ensure the org has an academic year to attach the class to (study groups
+   * are scoped by it). Reuse the current one, else the newest, else create one.
+   */
+  private async ensureAcademicYear(orgId: string, given?: string): Promise<string> {
+    if (given) return given
+    const existing = await this.prisma.academicYear.findFirst({
+      where: { organizationId: orgId },
+      orderBy: [{ isCurrent: 'desc' }, { startDate: 'desc' }],
+    })
+    if (existing) return existing.id
+    const y = new Date().getFullYear()
+    const created = await this.prisma.academicYear.create({
+      data: {
+        name: `${y}-${y + 1}`,
+        organizationId: orgId,
+        startDate: new Date(`${y}-06-01`),
+        endDate: new Date(`${y + 1}-04-30`),
+        isCurrent: true,
+      },
+    })
+    return created.id
+  }
+
   async createBatch(orgId: string, dto: CreateBatchDto) {
+    const academicYearId = await this.ensureAcademicYear(orgId, dto.academicYearId)
+    const joinCode = await this.freshJoinCode(dto.grade, dto.section)
     return this.prisma.batch.create({
       data: {
         name: dto.name,
         organizationId: orgId,
+        academicYearId,
+        joinCode,
+        ...(dto.grade ? { grade: dto.grade } : {}),
+        ...(dto.section ? { section: dto.section } : {}),
         ...(dto.branchId ? { branchId: dto.branchId } : {}),
-        ...(dto.academicYearId ? { academicYearId: dto.academicYearId } : {}),
-        ...(dto.maxStudents !== undefined
-          ? { maxStudents: dto.maxStudents }
-          : {}),
+        ...(dto.maxStudents !== undefined ? { maxStudents: dto.maxStudents } : {}),
       },
     })
+  }
+
+  /** Rotate a class's join code (e.g. if it leaked). Old code stops working. */
+  async regenerateJoinCode(orgId: string, batchId: string) {
+    const batch = await this.prisma.batch.findFirst({
+      where: { id: batchId, organizationId: orgId },
+    })
+    if (!batch) throw new NotFoundException('Batch not found')
+    const joinCode = await this.freshJoinCode(batch.grade, batch.section)
+    await this.prisma.batch.update({ where: { id: batchId }, data: { joinCode } })
+    return { joinCode }
   }
 
   async listBatches(orgId: string) {

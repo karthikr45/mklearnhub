@@ -53,6 +53,14 @@ export class SchoolController {
     return this.school.getBatch(batchId)
   }
 
+  @Post('batches/:batchId/regenerate-code')
+  regenerateCode(
+    @Param('batchId') batchId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.school.regenerateJoinCode(this.orgId(user), batchId)
+  }
+
   @Get('batches/:batchId/timetable')
   getTimetable(@Param('batchId') batchId: string) {
     return this.school.getTimetable(batchId)
