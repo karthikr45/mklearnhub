@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   Post,
   Query,
   Req,
@@ -20,6 +21,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RefreshDto } from './dto/refresh.dto'
 import { RegisterDto } from './dto/register.dto'
+import { RegisterParentDto } from './dto/register-parent.dto'
 import { RegisterStudentDto } from './dto/register-student.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
@@ -47,6 +49,23 @@ export class AuthController {
   @Post('register/student')
   registerStudent(@Body() dto: RegisterStudentDto) {
     return this.auth.registerStudent(dto)
+  }
+
+  @Post('register/parent')
+  registerParent(@Body() dto: RegisterParentDto) {
+    return this.auth.registerParent(dto)
+  }
+
+  @Get('parent-invite/:code')
+  parentInvite(@Param('code') code: string) {
+    return this.auth.getParentInvite(code)
+  }
+
+  @Post('me/parent-code')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  parentCode(@CurrentUser() user: JwtPayload) {
+    return this.auth.getOrCreateParentCode(user.sub)
   }
 
   @Post('login')

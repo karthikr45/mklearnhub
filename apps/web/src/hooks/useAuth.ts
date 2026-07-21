@@ -37,9 +37,30 @@ export function useAuth() {
       password: string
       name: string
       orgName?: string
+      orgType?: string
       inviteToken?: string
     }) => {
       const { data } = await api.post<AuthResponse>('/auth/register', input)
+      return data
+    },
+    onSuccess: (data) => {
+      setAuth({
+        user: data.user,
+        accessToken: data.tokens.accessToken,
+        refreshToken: data.tokens.refreshToken,
+      })
+      router.push('/dashboard')
+    },
+  })
+
+  const registerParent = useMutation({
+    mutationFn: async (input: {
+      email: string
+      password: string
+      name: string
+      code: string
+    }) => {
+      const { data } = await api.post<AuthResponse>('/auth/register/parent', input)
       return data
     },
     onSuccess: (data) => {
@@ -80,5 +101,5 @@ export function useAuth() {
     router.push('/login')
   }
 
-  return { user, login, register, registerStudent, logout }
+  return { user, login, register, registerStudent, registerParent, logout }
 }

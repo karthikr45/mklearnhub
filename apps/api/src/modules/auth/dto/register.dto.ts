@@ -1,11 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import {
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   Matches,
   MinLength,
 } from 'class-validator'
+
+const ORG_TYPES = ['BUSINESS', 'SCHOOL', 'INSTITUTE', 'COACHING_CENTER']
 
 export class RegisterDto {
   @ApiProperty()
@@ -29,6 +32,11 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   orgName?: string
+
+  @ApiPropertyOptional({ enum: ORG_TYPES, description: 'Type of the new organization' })
+  @IsOptional()
+  @IsIn(ORG_TYPES)
+  orgType?: string
 
   @ApiPropertyOptional({ description: 'Accept an org invite by token' })
   @IsOptional()

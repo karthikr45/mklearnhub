@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { School } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
+import { InviteParentCard } from '@/components/study/InviteParentCard'
 import { api } from '@/lib/api'
 
 interface TimetableSlot {
@@ -229,6 +230,8 @@ export default function MyClassPage() {
               </div>
             </section>
           )}
+
+          <InviteParentCard />
         </div>
       )}
     </div>

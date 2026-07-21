@@ -18,6 +18,7 @@ import { AuditService } from '../audit/audit.service'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
+import { RegisterParentDto } from './dto/register-parent.dto'
 import { RegisterStudentDto } from './dto/register-student.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
 
@@ -130,6 +131,84 @@ export class AuthService {
     return { user: this.toAuthUser(user), tokens: { accessToken, refreshToken } }
   }
 
+  /**
+   * Parent self-registration via a child's parent-link code. Creates a PARENT
+   * in the same school and links them to that student.
+   */
+  async registerParent(
+    dto: RegisterParentDto,
+  ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    })
+    if (existing) throw new ConflictException('Email already registered')
+
+    const policy = validatePassword(dto.password)
+    if (!policy.valid) throw new BadRequestException(policy.errors.join('; '))
+
+    const code = dto.code.trim().toUpperCase()
+    const child = await this.prisma.user.findUnique({
+      where: { parentLinkCode: code },
+      select: { id: true, organizationId: true },
+    })
+    if (!child) throw new BadRequestException('Invalid parent invite code')
+
+    const passwordHash = await hashPassword(dto.password)
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        passwordHash,
+        role: 'PARENT',
+        onboarded: true,
+        ...(child.organizationId
+          ? { organization: { connect: { id: child.organizationId } } }
+          : {}),
+        parentLinks: { create: { studentId: child.id, relation: 'parent' } },
+      },
+    })
+
+    const { refreshToken, accessToken } = await this.generateTokens(user, nanoid())
+    await this.createSession(user.id, refreshToken)
+    return { user: this.toAuthUser(user), tokens: { accessToken, refreshToken } }
+  }
+
+  /** Public preview of a parent-link code before a parent registers. */
+  async getParentInvite(code: string) {
+    const child = await this.prisma.user.findUnique({
+      where: { parentLinkCode: code.trim().toUpperCase() },
+      select: {
+        name: true,
+        role: true,
+        organization: { select: { name: true } },
+      },
+    })
+    if (!child || child.role !== 'STUDENT') return { valid: false as const }
+    return {
+      valid: true as const,
+      studentName: child.name,
+      schoolName: child.organization?.name ?? null,
+    }
+  }
+
+  /** A student generates (or fetches) the code to share with a parent. */
+  async getOrCreateParentCode(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, parentLinkCode: true },
+    })
+    if (!user || user.role !== 'STUDENT') {
+      throw new BadRequestException('Only students can invite a parent')
+    }
+    if (user.parentLinkCode) return { code: user.parentLinkCode }
+    const code = `PC-${nanoid(6).toUpperCase()}`
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { parentLinkCode: code },
+    })
+    return { code }
+  }
+
   async register(dto: RegisterDto): Promise<{ user: AuthUser; tokens: AuthTokens }> {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -159,9 +238,14 @@ export class AuthService {
       userData.role = invite.role
     } else if (dto.orgName) {
       userData.organization = {
-        create: { name: dto.orgName, slug: `${slugify(dto.orgName)}-${nanoid(6)}` },
+        create: {
+          name: dto.orgName,
+          slug: `${slugify(dto.orgName)}-${nanoid(6)}`,
+          ...(dto.orgType ? { type: dto.orgType as never } : {}),
+        },
       }
       userData.role = 'ORG_ADMIN'
+      userData.onboarded = true
     }
 
     const user = await this.prisma.user.create({ data: userData })
