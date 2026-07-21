@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { LiveBattle } from '@/components/study/LiveBattle'
+import { Whiteboard } from '@/components/study/Whiteboard'
 import { api } from '@/lib/api'
 import { getStudySocket } from '@/lib/studySocket'
 
@@ -55,9 +56,9 @@ export default function GroupDetailPage() {
   const params = useParams<{ groupId: string }>()
   const groupId = params.groupId
   const qc = useQueryClient()
-  const [tab, setTab] = useState<'chat' | 'battle' | 'resources' | 'members'>(
-    'chat',
-  )
+  const [tab, setTab] = useState<
+    'chat' | 'battle' | 'whiteboard' | 'resources' | 'members'
+  >('chat')
 
   const { data: group } = useQuery({
     queryKey: ['group', groupId],
@@ -88,7 +89,7 @@ export default function GroupDetailPage() {
       </div>
 
       <div className="mb-5 flex gap-1 border-b">
-        {(['chat', 'battle', 'resources', 'members'] as const).map((t) => (
+        {(['chat', 'battle', 'whiteboard', 'resources', 'members'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -105,6 +106,15 @@ export default function GroupDetailPage() {
 
       {tab === 'chat' && <ChatTab groupId={groupId} />}
       {tab === 'battle' && <LiveBattle groupId={groupId} />}
+      {tab === 'whiteboard' && (
+        <div>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Work through a problem together on the shared board. Your board saves
+            automatically.
+          </p>
+          <Whiteboard boardId={`group-${groupId}`} />
+        </div>
+      )}
       {tab === 'resources' && <ResourcesTab groupId={groupId} qc={qc} />}
       {tab === 'members' && (
         <div className="space-y-2">
