@@ -192,3 +192,14 @@
     opacity: 1;
   }
 }
+
+/* Premium Plyr video skin — brand the accent to the indigo primary. */
+.plyr-brand {
+  --plyr-color-main: hsl(243 75% 59%);
+  --plyr-video-control-color: #fff;
+  --plyr-range-thumb-background: #fff;
+  --plyr-video-background: #000;
+}
+.plyr-brand .plyr {
+  border-radius: 0.5rem;
+}
