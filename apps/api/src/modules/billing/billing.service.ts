@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Plan, SubscriptionStatus } from '@learnhub/db'
+import { renderReceiptEmail, sendEmail } from '@learnhub/email'
 import type StripeType from 'stripe'
 
 import { PrismaService } from '../../prisma/prisma.service'
@@ -136,7 +137,60 @@ export class BillingService {
       payload.razorpay_signature,
     )
     if (!valid) throw new BadRequestException('Invalid payment signature')
-    return this.activate(orgId, plan)
+    const result = await this.activate(orgId, plan)
+    void this.sendReceipt(orgId, plan, payload.razorpay_payment_id)
+    return result
+  }
+
+  /**
+   * Emails a branded receipt to the org's admin after a successful payment.
+   * Best-effort: any failure (or a missing RESEND_API_KEY) is swallowed so it
+   * never affects the payment result.
+   */
+  private async sendReceipt(orgId: string, plan: Plan, paymentId: string) {
+    try {
+      const entry = getPlan(plan)
+      if (!entry || entry.priceInr == null) return
+      const org = await this.prisma.organization.findUnique({
+        where: { id: orgId },
+        select: {
+          name: true,
+          users: {
+            where: { role: 'ORG_ADMIN' },
+            select: { name: true, email: true },
+            take: 1,
+          },
+        },
+      })
+      const admin = org?.users[0]
+      if (!admin) return
+
+      const now = new Date()
+      const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+      const receiptNo = `LH-${paymentId.replace(/^pay_/, '').slice(-8).toUpperCase()}`
+      const fmt = (d: Date) =>
+        d.toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      const html = await renderReceiptEmail({
+        name: admin.name,
+        receiptNo,
+        planName: entry.name,
+        amountLabel: `₹${entry.priceInr.toLocaleString('en-IN')}`,
+        paidOn: fmt(now),
+        paymentRef: paymentId,
+        periodEndLabel: fmt(periodEnd),
+      })
+      await sendEmail({
+        to: admin.email,
+        subject: `Your LearnHub receipt ${receiptNo}`,
+        html,
+      })
+    } catch (err) {
+      console.warn('[billing] receipt email failed:', err)
+    }
   }
 
   async handleRazorpayWebhook(rawBody: string, signature: string) {
