@@ -174,17 +174,56 @@ async function main() {
     for (const ch of chapters) await chapter(social.id, ch, co++, { bookId: book.id })
   }
 
-  // ── English & Hindi — light structure (books + a few chapters) ──
+  // ── English (Language & Literature) — two prescribed books ──
   const english = await subject('ENGLISH', 'English', 4)
-  const engBook = await findOrCreateBook(english.id, 'First Flight', 0)
-  for (const [i, ch] of ['A Letter to God', 'Nelson Mandela: Long Walk to Freedom', 'Two Stories about Flying', 'From the Diary of Anne Frank'].entries()) {
-    await chapter(english.id, ch, i, { bookId: engBook.id })
+  const firstFlight = await findOrCreateBook(english.id, 'First Flight', 0)
+  const firstFlightChapters = [
+    // Prose
+    'A Letter to God', 'Nelson Mandela: Long Walk to Freedom',
+    'Two Stories about Flying', 'From the Diary of Anne Frank',
+    'Glimpses of India', 'Mijbil the Otter', 'Madam Rides the Bus',
+    'The Sermon at Benares', 'The Proposal',
+    // Poems
+    'Dust of Snow', 'Fire and Ice', 'A Tiger in the Zoo',
+    'How to Tell Wild Animals', 'The Ball Poem', 'Amanda!', 'The Trees',
+    'Fog', 'The Tale of Custard the Dragon', 'For Anne Gregory',
+  ]
+  for (const [i, ch] of firstFlightChapters.entries()) {
+    await chapter(english.id, ch, i, { bookId: firstFlight.id })
+  }
+  const footprints = await findOrCreateBook(english.id, 'Footprints Without Feet', 1)
+  const footprintsChapters = [
+    'A Triumph of Surgery', "The Thief's Story", 'The Midnight Visitor',
+    'A Question of Trust', 'Footprints without Feet', 'The Making of a Scientist',
+    'The Necklace', 'Bholi', 'The Book That Saved the Earth',
+  ]
+  for (const [i, ch] of footprintsChapters.entries()) {
+    await chapter(english.id, ch, 100 + i, { bookId: footprints.id })
   }
 
+  // ── Hindi (Course A) — Kshitij + Kritika ──
   const hindi = await subject('HINDI', 'Hindi', 5)
-  const hindiBook = await findOrCreateBook(hindi.id, 'Kshitij (क्षितिज)', 0)
-  for (const [i, ch] of ['पद (सूरदास)', 'राम-लक्ष्मण-परशुराम संवाद', 'आत्मकथ्य', 'नेताजी का चश्मा'].entries()) {
-    await chapter(hindi.id, ch, i, { bookId: hindiBook.id })
+  const kshitij = await findOrCreateBook(hindi.id, 'Kshitij (क्षितिज)', 0)
+  const kshitijChapters = [
+    'सूरदास – पद', 'तुलसीदास – राम-लक्ष्मण-परशुराम संवाद', 'देव – सवैया और कवित्त',
+    'जयशंकर प्रसाद – आत्मकथ्य', 'सूर्यकांत त्रिपाठी निराला – उत्साह, अट नहीं रही है',
+    'नागार्जुन – यह दंतुरहित मुस्कान, फसल', 'गिरिजाकुमार माथुर – छाया मत छूना',
+    'ऋतुराज – कन्यादान', 'मंगलेश डबराल – संगतकार',
+    'प्रेमचंद – बालगोबिन भगत', 'रामवृक्ष बेनीपुरी – लखनवी अंदाज़',
+    'यशपाल – दुःख का अधिकार', 'सर्वेश्वर दयाल सक्सेना – एक कहानी यह भी',
+    'मन्नू भंडारी – स्त्री शिक्षा के विरोधी कुतर्कों का खंडन',
+    'महावीर प्रसाद द्विवेदी – नौबतखाने में इबादत', 'यतींद्र मिश्र – संस्कृति',
+  ]
+  for (const [i, ch] of kshitijChapters.entries()) {
+    await chapter(hindi.id, ch, i, { bookId: kshitij.id })
+  }
+  const kritika = await findOrCreateBook(hindi.id, 'Kritika (कृतिका)', 1)
+  const kritikaChapters = [
+    'माता का अँचल', 'जॉर्ज पंचम की नाक', 'साना-साना हाथ जोड़ि',
+    'एही ठैयाँ झुलनी हेरानी हो रामा!', 'मैं क्यों लिखता हूँ',
+  ]
+  for (const [i, ch] of kritikaChapters.entries()) {
+    await chapter(hindi.id, ch, 100 + i, { bookId: kritika.id })
   }
 
   const counts = await prisma.$transaction([

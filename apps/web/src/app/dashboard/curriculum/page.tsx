@@ -7,6 +7,59 @@ import { useState } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
 
+interface MappedContent {
+  mappingId: string
+  section: string
+  role: string
+  asset: { id: string; title: string; contentType: string; status: string }
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  PUBLISHED: 'bg-emerald-100 text-emerald-700',
+  APPROVED: 'bg-blue-100 text-blue-700',
+  UNDER_REVIEW: 'bg-amber-100 text-amber-700',
+  LICENSE_REVIEW: 'bg-amber-100 text-amber-700',
+  DRAFT: 'bg-secondary text-muted-foreground',
+  ARCHIVED: 'bg-muted text-muted-foreground',
+  REJECTED: 'bg-destructive/10 text-destructive',
+}
+
+/** Coverage chips: what content is mapped to a curriculum node + its status. */
+function NodeCoverage({
+  nodeType,
+  nodeId,
+  label,
+}: {
+  nodeType: string
+  nodeId: string
+  label?: string
+}) {
+  const { data } = useQuery({
+    queryKey: ['node-content', nodeType, nodeId],
+    queryFn: async () =>
+      (await api.get<MappedContent[]>(`/curriculum/nodes/${nodeType}/${nodeId}/content?all=true`)).data,
+  })
+  if (!data || data.length === 0) {
+    return label ? null : (
+      <span className="text-[11px] text-muted-foreground">No content yet</span>
+    )
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 py-1">
+      {label && <span className="text-[11px] font-medium text-muted-foreground">{label}:</span>}
+      {data.map((m) => (
+        <span
+          key={m.mappingId}
+          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLE[m.asset.status] ?? 'bg-secondary'}`}
+          title={`${m.asset.title} · ${m.section}`}
+        >
+          {m.role} · {m.asset.status}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 interface Topic { id: string; title: string }
 interface Chapter { id: string; title: string; unitId: string | null; bookId: string | null; topics: Topic[] }
 interface Unit { id: string; title: string }
@@ -101,18 +154,20 @@ export default function CurriculumPage() {
                                         </span>
                                       )}
                                     </span>
-                                    {ch.topics.length > 0 && (
-                                      <ChevronRight className={`h-3.5 w-3.5 transition-transform ${cOpen ? 'rotate-90' : ''}`} />
-                                    )}
+                                    <ChevronRight className={`h-3.5 w-3.5 transition-transform ${cOpen ? 'rotate-90' : ''}`} />
                                   </button>
-                                  {cOpen && ch.topics.length > 0 && (
-                                    <ul className="ml-6 mt-1 space-y-1 border-l pl-3">
+                                  {cOpen && (
+                                    <div className="ml-6 mt-1 space-y-2 border-l pl-3">
+                                      <NodeCoverage nodeType="CHAPTER" nodeId={ch.id} label="Chapter content" />
                                       {ch.topics.map((t) => (
-                                        <li key={t.id} className="py-1 text-sm text-muted-foreground">
-                                          {t.title}
-                                        </li>
+                                        <div key={t.id}>
+                                          <p className="py-1 text-sm">{t.title}</p>
+                                          <div className="pl-3">
+                                            <NodeCoverage nodeType="TOPIC" nodeId={t.id} />
+                                          </div>
+                                        </div>
                                       ))}
-                                    </ul>
+                                    </div>
                                   )}
                                 </li>
                               )

@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
-import { FileUp, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { FileUp, Link2, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -33,6 +33,14 @@ interface Asset {
   storageProvider: string | null
 }
 
+interface TreeTopic { id: string; title: string }
+interface TreeChapter { id: string; title: string; topics: TreeTopic[] }
+interface TreeSubject { id: string; title: string; chapters: TreeChapter[] }
+interface CurriculumTree { grades: { subjects: TreeSubject[] }[] }
+
+const SECTIONS = ['LEARN', 'STUDY', 'PRACTICE', 'TEST', 'OFFICIAL']
+const ROLE_PRESETS = ['VIDEO', 'EXPLANATION', 'NOTES', 'REVISION', 'KEY_CONCEPTS', 'MCQ', 'WORKSHEET', 'SOLUTION']
+
 export default function ContentStudioPage() {
   const qc = useQueryClient()
   const [title, setTitle] = useState('')
@@ -51,6 +59,49 @@ export default function ContentStudioPage() {
     queryFn: async () =>
       (await api.get<{ items: Asset[]; total: number }>('/content')).data,
   })
+
+  // Curriculum tree for the map-to-topic picker
+  const { data: tree } = useQuery({
+    queryKey: ['curriculum-tree-min'],
+    queryFn: async () => (await api.get<CurriculumTree>('/curriculum/tree')).data,
+  })
+  const subjects = tree?.grades?.[0]?.subjects ?? []
+
+  const [mapFor, setMapFor] = useState<string | null>(null)
+  const [mSubject, setMSubject] = useState('')
+  const [mChapter, setMChapter] = useState('')
+  const [mTopic, setMTopic] = useState('')
+  const [mSection, setMSection] = useState('LEARN')
+  const [mRole, setMRole] = useState('VIDEO')
+
+  const chapters = subjects.find((s) => s.id === mSubject)?.chapters ?? []
+  const topics = chapters.find((c) => c.id === mChapter)?.topics ?? []
+
+  const saveMapping = async (assetId: string) => {
+    const nodeId = mTopic || mChapter || mSubject
+    const nodeType = mTopic ? 'TOPIC' : mChapter ? 'CHAPTER' : 'SUBJECT'
+    if (!nodeId) {
+      toast.error('Pick at least a subject')
+      return
+    }
+    try {
+      await api.post(`/content/${assetId}/mappings`, {
+        nodeType,
+        nodeId,
+        section: mSection,
+        role: mRole.trim() || 'GENERAL',
+      })
+      toast.success('Mapped to curriculum')
+      setMapFor(null)
+      void qc.invalidateQueries({ queryKey: ['curriculum-tree'] })
+    } catch (err) {
+      const msg =
+        err instanceof AxiosError
+          ? (err.response?.data as { message?: string })?.message ?? 'Mapping failed'
+          : 'Mapping failed'
+      toast.error(msg)
+    }
+  }
 
   const isThirdParty = !OWNED.includes(sourceType)
   const isExternalOnly = sourceType === 'OFFICIAL_EXTERNAL'
@@ -240,27 +291,60 @@ export default function ContentStudioPage() {
               </p>
             ) : (
               data!.items.map((a) => (
-                <div key={a.id} className="card-elevated flex items-center justify-between p-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{a.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {a.contentType.replace(/_/g, ' ')} · {a.sourceType} ·{' '}
-                      {a.fileSize ? `${Math.round(a.fileSize / 1024)} KB` : '—'} ·{' '}
-                      {a.storageProvider ?? 'no file'}
-                    </p>
+                <div key={a.id} className="card-elevated p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{a.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.contentType.replace(/_/g, ' ')} · {a.sourceType} ·{' '}
+                        {a.fileSize ? `${Math.round(a.fileSize / 1024)} KB` : '—'} ·{' '}
+                        {a.storageProvider ?? 'no file'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        a.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700'
+                        : a.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-700'
+                        : 'bg-secondary text-secondary-foreground'
+                      }`}>
+                        {a.status}
+                      </span>
+                      <button
+                        onClick={() => setMapFor(mapFor === a.id ? null : a.id)}
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <Link2 className="h-3.5 w-3.5" /> Map
+                      </button>
+                      <button onClick={() => view(a.id)} className="text-xs text-primary hover:underline">
+                        View
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      a.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700'
-                      : a.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-700'
-                      : 'bg-secondary text-secondary-foreground'
-                    }`}>
-                      {a.status}
-                    </span>
-                    <button onClick={() => view(a.id)} className="text-xs text-primary hover:underline">
-                      View
-                    </button>
-                  </div>
+
+                  {mapFor === a.id && (
+                    <div className="mt-3 grid gap-2 rounded-lg border bg-muted/20 p-3 sm:grid-cols-2">
+                      <select value={mSubject} onChange={(e) => { setMSubject(e.target.value); setMChapter(''); setMTopic('') }} className="rounded-md border bg-background px-2 py-1.5 text-xs">
+                        <option value="">Subject…</option>
+                        {subjects.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                      </select>
+                      <select value={mChapter} onChange={(e) => { setMChapter(e.target.value); setMTopic('') }} disabled={!mSubject} className="rounded-md border bg-background px-2 py-1.5 text-xs disabled:opacity-50">
+                        <option value="">Chapter…</option>
+                        {chapters.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                      </select>
+                      <select value={mTopic} onChange={(e) => setMTopic(e.target.value)} disabled={!mChapter || topics.length === 0} className="rounded-md border bg-background px-2 py-1.5 text-xs disabled:opacity-50">
+                        <option value="">{topics.length ? 'Topic (optional)…' : 'No topics'}</option>
+                        {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+                      </select>
+                      <select value={mSection} onChange={(e) => setMSection(e.target.value)} className="rounded-md border bg-background px-2 py-1.5 text-xs">
+                        {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <input value={mRole} onChange={(e) => setMRole(e.target.value)} list="role-presets" placeholder="Role (e.g. VIDEO)" className="rounded-md border px-2 py-1.5 text-xs" />
+                      <datalist id="role-presets">{ROLE_PRESETS.map((r) => <option key={r} value={r} />)}</datalist>
+                      <button onClick={() => saveMapping(a.id)} className="mk-brand-bg col-span-full rounded-md px-3 py-1.5 text-xs font-medium text-white">
+                        Add to curriculum
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
