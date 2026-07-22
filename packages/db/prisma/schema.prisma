@@ -101,6 +101,16 @@ model User {
   // A student's shareable code that lets a parent self-register already
   // linked to this child (no browsing a list of minors).
   parentLinkCode String?   @unique
+  // Self-study learner profile — captured at onboarding to personalise content.
+  // For SCHOOL/INTERMEDIATE/ENGINEERING/MBA we ask academic details; for OTHER
+  // we skip them and use `interests` instead.
+  learnerTrack   LearnerTrack?
+  learnerBoard   EducationBoard?
+  learnerClass   String?
+  learnerYear    String?
+  learnerStream  String?
+  examTargets    String[]        @default([])
+  interests      String[]        @default([])
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   lastLoginAt    DateTime?
@@ -1221,6 +1231,14 @@ enum AttendanceStatus {
 
 // School education boards / syllabi. Starting with the two Telugu-state
 // boards; CBSE/ICSE/others included so the directory can grow nationally.
+enum LearnerTrack {
+  SCHOOL
+  INTERMEDIATE
+  ENGINEERING
+  MBA
+  OTHER
+}
+
 enum EducationBoard {
   TELANGANA_STATE
   ANDHRA_PRADESH_STATE

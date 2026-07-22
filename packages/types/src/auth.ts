@@ -20,6 +20,23 @@ export interface AuthUser {
   onboarded: boolean
 }
 
+export type LearnerTrack =
+  | 'SCHOOL'
+  | 'INTERMEDIATE'
+  | 'ENGINEERING'
+  | 'MBA'
+  | 'OTHER'
+
+export interface LearnerProfile {
+  track: LearnerTrack | null
+  board: string | null
+  classLevel: string | null
+  year: string | null
+  stream: string | null
+  examTargets: string[]
+  interests: string[]
+}
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),

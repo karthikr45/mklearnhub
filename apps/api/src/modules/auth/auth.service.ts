@@ -8,7 +8,12 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import type { Prisma, User } from '@learnhub/db'
-import type { AuthTokens, AuthUser, JwtPayload } from '@learnhub/types'
+import type {
+  AuthTokens,
+  AuthUser,
+  JwtPayload,
+  LearnerProfile,
+} from '@learnhub/types'
 import { comparePassword, hashPassword, slugify } from '@learnhub/utils'
 import { validate as validatePassword } from '@learnhub/compliance'
 import { nanoid } from 'nanoid'
@@ -16,6 +21,7 @@ import { nanoid } from 'nanoid'
 import { PrismaService } from '../../prisma/prisma.service'
 import { AuditService } from '../audit/audit.service'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
+import { SaveLearnerProfileDto } from './dto/learner-profile.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { RegisterParentDto } from './dto/register-parent.dto'
@@ -60,6 +66,80 @@ export class AuthService {
       data: { onboarded: true },
     })
     return this.toAuthUser(user)
+  }
+
+  private toLearnerProfile(user: {
+    learnerTrack: string | null
+    learnerBoard: string | null
+    learnerClass: string | null
+    learnerYear: string | null
+    learnerStream: string | null
+    examTargets: string[]
+    interests: string[]
+  }): LearnerProfile {
+    return {
+      track: (user.learnerTrack as LearnerProfile['track']) ?? null,
+      board: user.learnerBoard,
+      classLevel: user.learnerClass,
+      year: user.learnerYear,
+      stream: user.learnerStream,
+      examTargets: user.examTargets,
+      interests: user.interests,
+    }
+  }
+
+  async getLearnerProfile(userId: string): Promise<LearnerProfile> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        learnerTrack: true,
+        learnerBoard: true,
+        learnerClass: true,
+        learnerYear: true,
+        learnerStream: true,
+        examTargets: true,
+        interests: true,
+      },
+    })
+    if (!user) throw new UnauthorizedException()
+    return this.toLearnerProfile(user)
+  }
+
+  /**
+   * Saves a self-study learner's education profile. Fields not relevant to the
+   * chosen track are cleared, so switching tracks never leaves stale details.
+   */
+  async saveLearnerProfile(
+    userId: string,
+    dto: SaveLearnerProfileDto,
+  ): Promise<LearnerProfile> {
+    const academic = dto.track === 'SCHOOL' || dto.track === 'INTERMEDIATE'
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        learnerTrack: dto.track as never,
+        learnerBoard: academic ? ((dto.board as never) ?? null) : null,
+        learnerClass: academic ? (dto.classLevel ?? null) : null,
+        learnerYear: academic ? (dto.year ?? null) : null,
+        learnerStream:
+          dto.track === 'INTERMEDIATE' ? (dto.stream ?? null) : null,
+        examTargets:
+          dto.track === 'ENGINEERING' || dto.track === 'MBA'
+            ? (dto.examTargets ?? [])
+            : [],
+        interests: dto.track === 'OTHER' ? (dto.interests ?? []) : [],
+      },
+      select: {
+        learnerTrack: true,
+        learnerBoard: true,
+        learnerClass: true,
+        learnerYear: true,
+        learnerStream: true,
+        examTargets: true,
+        interests: true,
+      },
+    })
+    return this.toLearnerProfile(user)
   }
 
   async generateTokens(user: User, sessionId: string): Promise<AuthTokens> {

@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -18,6 +19,7 @@ import type { JwtPayload } from '@learnhub/types'
 import { AuthService } from './auth.service'
 import { CurrentUser } from './decorators/current-user.decorator'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
+import { SaveLearnerProfileDto } from './dto/learner-profile.dto'
 import { LoginDto } from './dto/login.dto'
 import { RefreshDto } from './dto/refresh.dto'
 import { RegisterDto } from './dto/register.dto'
@@ -74,6 +76,23 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   markOnboarded(@CurrentUser() user: JwtPayload) {
     return this.auth.markOnboarded(user.sub)
+  }
+
+  @Get('me/learner-profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getLearnerProfile(@CurrentUser() user: JwtPayload) {
+    return this.auth.getLearnerProfile(user.sub)
+  }
+
+  @Put('me/learner-profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  saveLearnerProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: SaveLearnerProfileDto,
+  ) {
+    return this.auth.saveLearnerProfile(user.sub, dto)
   }
 
   @Post('login')
