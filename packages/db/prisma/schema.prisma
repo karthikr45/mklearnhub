@@ -1760,3 +1760,482 @@ enum DsrStatus {
   COMPLETED
   REJECTED
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Curriculum & Content system (generic; CBSE Grade 10 is the first data)
+// Curriculum metadata ("what to learn") is kept strictly separate from
+// ContentAsset ("resources that teach/assess"), joined many-to-many via
+// CurriculumContentMapping. Nothing here is board/grade-specific in code.
+// See docs/curriculum-architecture.md.
+// ═══════════════════════════════════════════════════════════════════
+
+model CurriculumBoard {
+  id          String           @id @default(cuid())
+  code        String           @unique // CBSE, TS_STATE, JEE, …
+  name        String
+  description String?
+  order       Int              @default(0)
+  metadata    Json             @default("{}")
+  status      CurriculumStatus @default(DRAFT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  years CurriculumYear[]
+
+  @@map("curriculum_boards")
+}
+
+/// Academic-year versioning: a board's curriculum tree is versioned per year
+/// (2026-27, 2027-28…). Old years are never overwritten; content assets are
+/// reused across years via mappings.
+model CurriculumYear {
+  id        String           @id @default(cuid())
+  boardId   String
+  label     String // "2026-27"
+  isCurrent Boolean          @default(false)
+  startDate DateTime?
+  endDate   DateTime?
+  order     Int              @default(0)
+  status    CurriculumStatus @default(DRAFT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  board  CurriculumBoard   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  grades CurriculumGrade[]
+
+  @@unique([boardId, label])
+  @@map("curriculum_years")
+}
+
+/// Generic level: "Grade 10" for CBSE, but also a "level" for JEE/UPSC/etc.
+model CurriculumGrade {
+  id        String           @id @default(cuid())
+  yearId    String
+  code      String // GRADE_10
+  name      String // Grade 10
+  level     Int? // numeric ordering where meaningful
+  order     Int              @default(0)
+  metadata  Json             @default("{}")
+  status    CurriculumStatus @default(DRAFT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  year     CurriculumYear      @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  subjects CurriculumSubject[]
+
+  @@unique([yearId, code])
+  @@map("curriculum_grades")
+}
+
+model CurriculumSubject {
+  id          String           @id @default(cuid())
+  gradeId     String
+  code        String // SCIENCE
+  title       String // Science
+  description String?
+  order       Int              @default(0)
+  metadata    Json             @default("{}")
+  status      CurriculumStatus @default(DRAFT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  grade    CurriculumGrade     @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  units    CurriculumUnit[]
+  books    CurriculumBook[]
+  chapters CurriculumChapter[]
+
+  @@unique([gradeId, code])
+  @@map("curriculum_subjects")
+}
+
+/// Optional grouping above chapters (e.g. Maths units). Nullable link on Chapter.
+model CurriculumUnit {
+  id        String              @id @default(cuid())
+  subjectId String
+  code      String
+  title     String
+  order     Int                 @default(0)
+  status    CurriculumStatus    @default(DRAFT)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  subject   CurriculumSubject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapters  CurriculumChapter[]
+
+  @@map("curriculum_units")
+}
+
+/// Optional textbook grouping. Some subjects reference a book; many don't.
+model CurriculumBook {
+  id        String              @id @default(cuid())
+  subjectId String
+  code      String?
+  title     String
+  order     Int                 @default(0)
+  status    CurriculumStatus    @default(DRAFT)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  subject   CurriculumSubject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapters  CurriculumChapter[]
+
+  @@map("curriculum_books")
+}
+
+model CurriculumChapter {
+  id          String           @id @default(cuid())
+  subjectId   String
+  unitId      String?
+  bookId      String?
+  code        String
+  title       String
+  description String?
+  order       Int              @default(0)
+  metadata    Json             @default("{}")
+  status      CurriculumStatus @default(DRAFT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  subject CurriculumSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  unit    CurriculumUnit?   @relation(fields: [unitId], references: [id])
+  book    CurriculumBook?   @relation(fields: [bookId], references: [id])
+  topics  CurriculumTopic[]
+
+  @@unique([subjectId, code])
+  @@map("curriculum_chapters")
+}
+
+model CurriculumTopic {
+  id          String           @id @default(cuid())
+  chapterId   String
+  code        String
+  title       String
+  description String?
+  order       Int              @default(0)
+  metadata    Json             @default("{}")
+  status      CurriculumStatus @default(DRAFT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  chapter    CurriculumChapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  subtopics  CurriculumSubtopic[]
+  objectives LearningObjective[]
+
+  @@unique([chapterId, code])
+  @@map("curriculum_topics")
+}
+
+/// Optional deeper split under a topic.
+model CurriculumSubtopic {
+  id         String              @id @default(cuid())
+  topicId    String
+  code       String
+  title      String
+  order      Int                 @default(0)
+  status     CurriculumStatus    @default(DRAFT)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  topic      CurriculumTopic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  objectives LearningObjective[]
+
+  @@map("curriculum_subtopics")
+}
+
+/// "The student should be able to …" — the finest curriculum unit; attaches to
+/// a topic or a subtopic.
+model LearningObjective {
+  id         String              @id @default(cuid())
+  topicId    String?
+  subtopicId String?
+  code       String?
+  statement  String
+  order      Int                 @default(0)
+  status     CurriculumStatus    @default(DRAFT)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  topic      CurriculumTopic?    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  subtopic   CurriculumSubtopic? @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
+
+  @@map("learning_objectives")
+}
+
+/// External source registry (NCERT, an OER site, a licensed vendor…). An asset
+/// may reference one; this records the authoritative origin.
+model ContentSource {
+  id          String            @id @default(cuid())
+  name        String
+  sourceType  ContentSourceType
+  url         String?
+  licenseType LicenseType       @default(UNKNOWN)
+  licenseUrl  String?
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  assets ContentAsset[]
+
+  @@map("content_sources")
+}
+
+/// The physical/authored resource — stored ONCE, reused across many curriculum
+/// mappings. Carries the complete licensing/provenance block: the app must be
+/// able to answer where it came from, who owns it, and whether we may
+/// commercially self-host it. Third-party files are only stored when
+/// selfHostingAllowed = true (enforced in the service, see ContentService).
+model ContentAsset {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  contentType ContentType
+
+  // Provenance
+  sourceType    ContentSourceType
+  copyrightOwner String?
+  licenseType    LicenseType      @default(UNKNOWN)
+  sourceId       String?
+  sourceName     String?
+  sourceUrl      String?
+  licenseUrl     String?
+
+  // Rights (default to the safe, restrictive values)
+  commercialUseAllowed   Boolean @default(false)
+  redistributionAllowed  Boolean @default(false)
+  selfHostingAllowed     Boolean @default(false)
+  modificationAllowed    Boolean @default(false)
+  attributionRequired    Boolean @default(false)
+  attributionText        String?
+
+  // License verification
+  licenseVerified     Boolean   @default(false)
+  licenseVerifiedById String?
+  licenseVerifiedDate DateTime?
+
+  // Storage-neutral identity (NEVER only a provider URL)
+  storageProvider String?
+  storageBucket   String?
+  storageKey      String?
+  cdnUrl          String?
+  mimeType        String?
+  fileSize        BigInt?
+  checksum        String?  @unique // SHA-256 — enforces dedup
+  version         Int      @default(1)
+
+  // Inline/authored content that isn't a file (rich text, MCQ payload, …)
+  body Json?
+
+  // Content pipeline / review
+  generationType     GenerationType?
+  generatedBy        String?
+  generationModel    String?
+  generationDate     DateTime?
+  reviewedById       String?
+  reviewDate         DateTime?
+  approvedById       String?
+  approvalDate       DateTime?
+  factCheckStatus    FactCheckStatus?     @default(PENDING)
+  copyrightCheckStatus CopyrightCheckStatus? @default(PENDING)
+
+  status    ContentStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  source   ContentSource?             @relation(fields: [sourceId], references: [id])
+  mappings CurriculumContentMapping[]
+  versions ContentAssetVersion[]
+
+  @@index([status])
+  @@index([contentType])
+  @@map("content_assets")
+}
+
+/// Many-to-many join: one asset ↔ many curriculum nodes. Polymorphic node
+/// reference so any level (subject/unit/chapter/topic/subtopic/objective) can be
+/// mapped without a wide nullable-FK table.
+model CurriculumContentMapping {
+  id        String             @id @default(cuid())
+  assetId   String
+  nodeType  CurriculumNodeType
+  nodeId    String
+  section   ContentSection
+  role      String // VIDEO, NOTES, MCQ, WORKSHEET, …
+  order     Int                @default(0)
+  createdAt DateTime           @default(now())
+
+  asset ContentAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, nodeType, nodeId, section, role])
+  @@index([nodeType, nodeId])
+  @@index([assetId])
+  @@map("curriculum_content_mappings")
+}
+
+/// Immutable version history for an asset (checksum + storage key per version).
+model ContentAssetVersion {
+  id              String   @id @default(cuid())
+  assetId         String
+  version         Int
+  checksum        String?
+  storageKey      String?
+  storageProvider String?
+  fileSize        BigInt?
+  note            String?
+  createdAt       DateTime @default(now())
+
+  asset ContentAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, version])
+  @@map("content_asset_versions")
+}
+
+/// A discovered/staged resource awaiting admin review. Never auto-published;
+/// only imported to storage after a human decision and a passing license gate.
+model ContentIngestion {
+  id                   String            @id @default(cuid())
+  title                String
+  description          String?
+  contentType          ContentType?
+  sourceType           ContentSourceType?
+  sourceName           String?
+  sourceUrl            String?
+  licenseType          LicenseType?
+  commercialUseAllowed Boolean?
+  selfHostingAllowed   Boolean?
+  attributionRequired  Boolean?
+  isDuplicate          Boolean           @default(false)
+  recommendedAction    IngestionAction?
+  nodeType             CurriculumNodeType?
+  nodeId               String?
+  status               IngestionStatus   @default(DISCOVERED)
+  decision             IngestionAction?
+  reviewedById         String?
+  decidedAt            DateTime?
+  metadata             Json              @default("{}")
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([status])
+  @@map("content_ingestions")
+}
+
+enum CurriculumStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CurriculumNodeType {
+  SUBJECT
+  UNIT
+  BOOK
+  CHAPTER
+  TOPIC
+  SUBTOPIC
+  OBJECTIVE
+}
+
+enum ContentType {
+  RICH_TEXT
+  HTML
+  PDF
+  VIDEO
+  AUDIO
+  IMAGE
+  DIAGRAM
+  ANIMATION
+  INTERACTIVE
+  DETAILED_NOTES
+  REVISION_NOTES
+  FORMULA_SHEET
+  KEY_CONCEPTS
+  FLASHCARDS
+  WORKED_EXAMPLES
+  MCQ
+  MULTI_SELECT
+  SHORT_ANSWER
+  LONG_ANSWER
+  NUMERICAL
+  ASSERTION_REASON
+  COMPETENCY
+  CASE_STUDY
+  WORKSHEET
+  TOPIC_QUIZ
+  CHAPTER_TEST
+  SUBJECT_TEST
+  MOCK_EXAM
+  SOLUTION
+  PREVIOUS_PAPER
+  OFFICIAL_EXTERNAL
+}
+
+enum ContentSection {
+  LEARN
+  STUDY
+  PRACTICE
+  TEST
+  OFFICIAL
+}
+
+enum ContentSourceType {
+  ORIGINAL
+  OPEN_LICENSE
+  LICENSED
+  OFFICIAL_EXTERNAL
+  USER_UPLOADED
+  INTERNAL_GENERATED
+}
+
+enum LicenseType {
+  OWNED
+  CC0
+  CC_BY
+  CC_BY_SA
+  COMMERCIAL_LICENSE
+  EXTERNAL_ONLY
+  CUSTOM
+  UNKNOWN
+}
+
+enum ContentStatus {
+  DRAFT
+  UNDER_REVIEW
+  LICENSE_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+  REJECTED
+}
+
+enum GenerationType {
+  AI
+  HUMAN
+  HYBRID
+}
+
+enum FactCheckStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum CopyrightCheckStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum IngestionStatus {
+  DISCOVERED
+  NORMALIZED
+  DUPLICATE_CHECK
+  LICENSE_CHECK
+  MAPPED
+  REVIEW
+  APPROVED
+  IMPORTED
+  REJECTED
+}
+
+enum IngestionAction {
+  IMPORT_TO_STORAGE
+  SAVE_AS_EXTERNAL
+  MARK_LICENSE_REVIEW
+  REJECT
+}
