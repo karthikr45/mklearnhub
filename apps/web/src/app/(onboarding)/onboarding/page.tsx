@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { LearnerOnboarding } from '@/components/onboarding/LearnerOnboarding'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/lib/store'
 
@@ -183,6 +184,10 @@ export default function OnboardingPage() {
       </div>
     )
   }
+
+  // Self-study learners get a branched education-profile capture instead of a
+  // static tour, so we can personalise their content.
+  if (user.role === 'LEARNER') return <LearnerOnboarding />
 
   const steps = STEPS[user.role] ?? STEPS.LEARNER!
   const step = steps[idx]!
