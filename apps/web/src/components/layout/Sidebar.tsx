@@ -10,6 +10,7 @@ import {
   HelpCircle,
   Home,
   Layers,
+  Library,
   LayoutDashboard,
   MessagesSquare,
   PenTool,
@@ -48,6 +49,7 @@ const ICONS: Record<string, LucideIcon> = {
   trophy: Trophy,
   pen: PenTool,
   layers: Layers,
+  library: Library,
 }
 
 export function Sidebar() {

@@ -21,6 +21,7 @@ import { DoubtsModule } from './modules/doubts/doubts.module'
 import { GamificationModule } from './modules/gamification/gamification.module'
 import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
+import { ContentModule } from './modules/content/content.module'
 import { PushModule } from './modules/push/push.module'
 import { RoomsModule } from './modules/rooms/rooms.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
@@ -67,6 +68,7 @@ import { PrismaModule } from './prisma/prisma.module'
     NotificationsModule,
     PushModule,
     RoomsModule,
+    ContentModule,
     BillingModule,
     SearchModule,
     SsoModule,

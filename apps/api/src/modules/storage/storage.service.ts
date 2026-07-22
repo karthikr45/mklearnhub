@@ -43,6 +43,15 @@ export class StorageService {
     return this.provider.name
   }
 
+  /** Configured bucket/container name (for recording asset storage identity). */
+  bucketName(): string {
+    return (
+      this.config.get<string>('STORAGE_BUCKET') ??
+      this.config.get<string>('AWS_BUCKET_NAME') ??
+      ''
+    )
+  }
+
   isConfigured(): boolean {
     return this.provider.isConfigured()
   }
