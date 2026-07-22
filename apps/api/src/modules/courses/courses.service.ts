@@ -33,6 +33,60 @@ export class CoursesService {
     })
   }
 
+  /**
+   * Public self-study catalog: every published course owned by the LearnHub
+   * platform org. Personalised by the learner's profile — courses whose tags
+   * match the learner's board/class/stream/exam targets/interests are flagged
+   * `recommended` and sorted first. Works for any user, including a school-less
+   * LEARNER with no organization.
+   */
+  async catalog(userId: string) {
+    const [courses, profile] = await Promise.all([
+      this.prisma.course.findMany({
+        where: { status: 'PUBLISHED', organization: { isPlatform: true } },
+        orderBy: { enrollmentCount: 'desc' },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          learnerTrack: true,
+          learnerBoard: true,
+          learnerClass: true,
+          learnerStream: true,
+          examTargets: true,
+          interests: true,
+        },
+      }),
+    ])
+
+    const wanted = new Set<string>()
+    if (profile) {
+      const add = (v?: string | null) => {
+        if (v) wanted.add(v.toLowerCase())
+      }
+      add(profile.learnerTrack)
+      add(profile.learnerBoard)
+      add(profile.learnerStream)
+      if (profile.learnerClass) {
+        add(profile.learnerClass)
+        add(`class ${profile.learnerClass}`)
+      }
+      for (const t of profile.examTargets) add(t)
+      for (const i of profile.interests) add(i)
+    }
+
+    const scored = courses.map((c) => {
+      const score = c.tags.reduce(
+        (n, tag) => (wanted.has(tag.toLowerCase()) ? n + 1 : n),
+        0,
+      )
+      return { course: c, score }
+    })
+    // Recommended first (by score), then the rest by popularity.
+    scored.sort((a, b) => b.score - a.score)
+    return scored.map(({ course, score }) => ({ ...course, recommended: score > 0 }))
+  }
+
   async addChapter(courseId: string, dto: CreateChapterDto) {
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new NotFoundException('Course not found')

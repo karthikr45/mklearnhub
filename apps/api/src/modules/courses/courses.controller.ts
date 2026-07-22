@@ -11,7 +11,9 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import type { JwtPayload } from '@learnhub/types'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
 import { CoursesService } from './courses.service'
 import { CreateChapterDto } from './dto/create-chapter.dto'
 import { CreateCourseDto } from './dto/create-course.dto'
@@ -41,6 +43,12 @@ export class CoursesController {
     return this.courses.list(this.orgId(user))
   }
 
+  /** Public self-study catalog (platform courses) — no org required. */
+  @Get('catalog')
+  catalog(@CurrentUser() user: JwtPayload) {
+    return this.courses.catalog(user.sub)
+  }
+
   @Post('upload-url')
   getUploadUrl(@Body() dto: UploadUrlDto) {
     return this.courses.getUploadUrl(dto.key)
@@ -57,6 +65,8 @@ export class CoursesController {
   }
 
   @Post(':courseId/chapters')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN')
   addChapter(
     @Param('courseId') courseId: string,
     @Body() dto: CreateChapterDto,
@@ -65,6 +75,8 @@ export class CoursesController {
   }
 
   @Post('chapters/:chapterId/lessons')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN')
   addLesson(
     @Param('chapterId') chapterId: string,
     @Body() dto: CreateLessonDto,
@@ -73,6 +85,8 @@ export class CoursesController {
   }
 
   @Post(':courseId/publish')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN')
   publish(@Param('courseId') courseId: string) {
     return this.courses.publish(courseId)
   }

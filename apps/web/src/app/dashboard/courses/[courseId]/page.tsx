@@ -17,6 +17,9 @@ import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/store'
+
+const AUTHOR_ROLES = ['INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN']
 
 interface DetailLesson {
   id: string
@@ -58,6 +61,8 @@ export default function CourseDetailPage() {
   const params = useParams<{ courseId: string }>()
   const courseId = params.courseId
   const qc = useQueryClient()
+  const role = useAuthStore((s) => s.user?.role)
+  const canAuthor = Boolean(role && AUTHOR_ROLES.includes(role))
 
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({})
   const [showChapterForm, setShowChapterForm] = useState(false)
@@ -69,7 +74,9 @@ export default function CourseDetailPage() {
   const { data: course, isLoading } = useQuery({
     queryKey: ['course-detail', courseId],
     queryFn: async () => {
-      const { data } = await api.get<CourseDetail>(`/courses/${courseId}`)
+      // Use the org-agnostic progress endpoint so platform/self-study courses
+      // load for learners with no organization (getCourse is org-scoped).
+      const { data } = await api.get<CourseDetail>(`/courses/${courseId}/progress`)
       return data
     },
     enabled: Boolean(courseId),
@@ -173,7 +180,7 @@ export default function CourseDetailPage() {
         description={course.description ?? ''}
         action={
           <div className="flex items-center gap-2">
-            {isDraft && (
+            {isDraft && canAuthor && (
               <button
                 onClick={() => publish.mutate()}
                 disabled={publish.isPending}
@@ -226,15 +233,17 @@ export default function CourseDetailPage() {
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Curriculum</h2>
-        <button
-          onClick={() => setShowChapterForm((v) => !v)}
-          className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
-        >
-          <Plus className="h-4 w-4" /> Add chapter
-        </button>
+        {canAuthor && (
+          <button
+            onClick={() => setShowChapterForm((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+          >
+            <Plus className="h-4 w-4" /> Add chapter
+          </button>
+        )}
       </div>
 
-      {showChapterForm && (
+      {canAuthor && showChapterForm && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -333,7 +342,7 @@ export default function CourseDetailPage() {
                         </ul>
                       )}
 
-                      {lessonForChapter === chapter.id ? (
+                      {canAuthor && lessonForChapter === chapter.id ? (
                         <form
                           onSubmit={(e) => {
                             e.preventDefault()
