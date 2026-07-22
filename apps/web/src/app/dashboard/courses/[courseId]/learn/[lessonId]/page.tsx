@@ -93,6 +93,7 @@ export default function LessonPlayerPage() {
   const canEdit =
     role === 'INSTRUCTOR' || role === 'ORG_ADMIN' || role === 'SUPER_ADMIN'
   const [videoUrl, setVideoUrl] = useState('')
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const attachUrl = useMutation({
@@ -109,6 +110,7 @@ export default function LessonPlayerPage() {
 
   const uploadFile = useMutation({
     mutationFn: async (file: File) => {
+      setUploadPct(0)
       // 1) presigned direct-to-storage (R2/S3) URL
       const { data: presign } = await api.post<{ url: string; key: string }>(
         `/video/lessons/${lessonId}/upload-url`,
@@ -117,27 +119,44 @@ export default function LessonPlayerPage() {
           contentType: file.type || 'application/octet-stream',
         },
       )
-      // 2) upload the file straight to storage (no auth header — URL is signed)
-      const put = await fetch(presign.url, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      // 2) PUT straight to storage via XHR so we can show upload progress
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', presign.url)
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100))
+        }
+        xhr.onload = () =>
+          xhr.status >= 200 && xhr.status < 300
+            ? resolve()
+            : reject(
+                new Error(
+                  `Storage rejected the upload (HTTP ${xhr.status}). Add a PUT CORS rule to the R2 bucket for this origin.`,
+                ),
+              )
+        xhr.onerror = () =>
+          reject(
+            new Error(
+              'Could not reach storage (usually a missing CORS PUT rule on the R2 bucket).',
+            ),
+          )
+        xhr.send(file)
       })
-      if (!put.ok) {
-        throw new Error(
-          `Storage rejected the upload (HTTP ${put.status}). If this is CORS, add a PUT rule to the R2 bucket.`,
-        )
-      }
+      setUploadPct(100)
       // 3) point the lesson at the uploaded object
       await api.post(`/video/lessons/${lessonId}/attach-key`, { key: presign.key })
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['course-detail', courseId] })
-      qc.invalidateQueries({ queryKey: ['lesson-stream', lessonId] })
-      toast.success('Video uploaded')
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['course-detail', courseId] })
+      await qc.invalidateQueries({ queryKey: ['lesson-stream', lessonId] })
+      toast.success('Video uploaded — preview ready')
+      setUploadPct(null)
     },
-    onError: (err) =>
-      toast.error(err instanceof Error ? err.message : 'Upload failed'),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Upload failed')
+      setUploadPct(null)
+    },
   })
 
   const { data: course, isLoading } = useQuery({
@@ -250,14 +269,31 @@ export default function LessonPlayerPage() {
                     if (f) uploadFile.mutate(f)
                   }}
                 />
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploadFile.isPending}
-                  className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploadFile.isPending ? 'Uploading…' : 'Upload a file'}
-                </button>
+                {uploadPct !== null ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        {uploadPct < 100 ? `Uploading to storage… ${uploadPct}%` : 'Finishing…'}
+                      </span>
+                      <span className="font-medium">{uploadPct}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full bg-primary transition-all"
+                        style={{ width: `${uploadPct}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload a file
+                  </button>
+                )}
               </div>
             ) : null}
           </div>
