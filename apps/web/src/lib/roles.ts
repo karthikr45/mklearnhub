@@ -50,9 +50,10 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard/leaderboard', label: 'Leaderboard', icon: 'trophy', roles: ['STUDENT'] },
   // Parent
   { href: '/dashboard/children', label: 'My Children', icon: 'users', roles: ['PARENT'] },
-  // Shared reading
-  { href: '/dashboard/knowledge', label: 'Knowledge', icon: 'book', roles: ['ORG_ADMIN', 'INSTRUCTOR', 'LEARNER', 'STUDENT'] },
-  { href: '/dashboard/assessments', label: 'Assessments', icon: 'clipboard', roles: ['ORG_ADMIN', 'INSTRUCTOR', 'LEARNER', 'STUDENT'] },
+  // Shared reading — org-scoped, so only for org members (not solo learners,
+  // who use Practice for the global assessment bank instead).
+  { href: '/dashboard/knowledge', label: 'Knowledge', icon: 'book', roles: ['ORG_ADMIN', 'INSTRUCTOR', 'STUDENT'] },
+  { href: '/dashboard/assessments', label: 'Assessments', icon: 'clipboard', roles: ['ORG_ADMIN', 'INSTRUCTOR', 'STUDENT'] },
   // Staff (admin + instructor)
   { href: '/dashboard/courses', label: 'Courses', icon: 'grad', roles: STAFF_ROLES },
   { href: '/dashboard/school', label: 'School', icon: 'school', roles: STAFF_ROLES },

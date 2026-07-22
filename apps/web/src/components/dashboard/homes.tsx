@@ -3,10 +3,15 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   BookOpen,
+  Compass,
+  Flame,
   GraduationCap,
+  Layers,
   ShieldCheck,
+  Target,
   TrendingUp,
   Users,
+  Zap,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -122,11 +127,30 @@ export function InstructorHome() {
 }
 
 // ─── Learner / Student ───────────────────────────────
+interface GameStats {
+  xp: number
+  level: number
+  xpIntoLevel: number
+  currentStreak: number
+  quizzes: number
+  correct: number
+}
+
+const QUICK_TILES = [
+  { href: '/dashboard/explore', label: 'Explore courses', icon: Compass },
+  { href: '/dashboard/study', label: 'Practice & tests', icon: Target },
+  { href: '/dashboard/flashcards', label: 'Flashcards', icon: Layers },
+]
+
 export function LearnerHome() {
   const user = useAuthStore((s) => s.user)
   const { data: enrollments, isLoading } = useQuery({
     queryKey: ['my-enrollments'],
     queryFn: async () => (await api.get<Enrollment[]>('/courses/me/enrollments')).data,
+  })
+  const { data: game } = useQuery({
+    queryKey: ['gamification-me'],
+    queryFn: async () => (await api.get<GameStats>('/gamification/me')).data,
   })
   return (
     <div>
@@ -134,15 +158,60 @@ export function LearnerHome() {
         title={`Hi${user?.name ? `, ${firstName(user.name)}` : ''}`}
         description="Pick up where you left off."
       />
-      <div className="mb-6 flex flex-wrap gap-3">
-        <Link href="/dashboard/explore" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-          Explore courses
-        </Link>
-        <Link href="/dashboard/learning" className="rounded-md border px-4 py-2 text-sm">My learning</Link>
+
+      {/* Stat row — matches the streak/XP promise from onboarding */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="card-elevated flex items-center gap-3 p-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Zap className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-lg font-bold leading-none">Lv {game?.level ?? 1}</p>
+            <p className="text-xs text-muted-foreground">{game?.xp ?? 0} XP</p>
+          </div>
+        </div>
+        <div className="card-elevated flex items-center gap-3 p-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+            <Flame className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-lg font-bold leading-none">{game?.currentStreak ?? 0}</p>
+            <p className="text-xs text-muted-foreground">day streak</p>
+          </div>
+        </div>
+        <div className="card-elevated flex items-center gap-3 p-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+            <Target className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-lg font-bold leading-none">{game?.quizzes ?? 0}</p>
+            <p className="text-xs text-muted-foreground">tests taken</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="mb-8 grid gap-3 sm:grid-cols-3">
+        {QUICK_TILES.map((t) => (
+          <Link
+            key={t.href}
+            href={t.href}
+            className="card-elevated card-elevated-hover flex items-center gap-3 p-4"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <t.icon className="h-5 w-5" />
+            </span>
+            <span className="text-sm font-medium">{t.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-muted-foreground">Continue learning</h2>
         {user?.role === 'LEARNER' && (
           <Link
             href="/dashboard/join-class"
-            className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
           >
             <Users className="h-4 w-4" /> Join a class
           </Link>
