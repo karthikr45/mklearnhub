@@ -109,17 +109,35 @@ export default function LessonPlayerPage() {
 
   const uploadFile = useMutation({
     mutationFn: async (file: File) => {
-      const fd = new FormData()
-      fd.append('file', file)
-      await api.post(`/video/lessons/${lessonId}/upload`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // 1) presigned direct-to-storage (R2/S3) URL
+      const { data: presign } = await api.post<{ url: string; key: string }>(
+        `/video/lessons/${lessonId}/upload-url`,
+        {
+          filename: file.name,
+          contentType: file.type || 'application/octet-stream',
+        },
+      )
+      // 2) upload the file straight to storage (no auth header — URL is signed)
+      const put = await fetch(presign.url, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
       })
+      if (!put.ok) {
+        throw new Error(
+          `Storage rejected the upload (HTTP ${put.status}). If this is CORS, add a PUT rule to the R2 bucket.`,
+        )
+      }
+      // 3) point the lesson at the uploaded object
+      await api.post(`/video/lessons/${lessonId}/attach-key`, { key: presign.key })
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['course-detail', courseId] })
+      qc.invalidateQueries({ queryKey: ['lesson-stream', lessonId] })
       toast.success('Video uploaded')
     },
-    onError: () => toast.error('Upload failed'),
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : 'Upload failed'),
   })
 
   const { data: course, isLoading } = useQuery({
@@ -129,6 +147,16 @@ export default function LessonPlayerPage() {
       return data
     },
     enabled: Boolean(courseId),
+  })
+
+  // Fresh delivery URL for the video (object-storage signed URLs expire, so we
+  // fetch one at play time instead of relying on a stored URL).
+  const { data: stream } = useQuery({
+    queryKey: ['lesson-stream', lessonId],
+    queryFn: async () =>
+      (await api.get<{ videoUrl: string | null }>(`/video/${lessonId}/stream`)).data,
+    enabled: Boolean(lessonId),
+    retry: false,
   })
 
   const orderedLessons: LearnLesson[] = course
@@ -180,8 +208,8 @@ export default function LessonPlayerPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div>
           <div className="card-elevated p-4">
-            {currentLesson.videoUrl ? (
-              <VideoPlayer src={currentLesson.videoUrl} />
+            {stream?.videoUrl ?? currentLesson.videoUrl ? (
+              <VideoPlayer src={(stream?.videoUrl ?? currentLesson.videoUrl) as string} />
             ) : (
               renderContent(currentLesson.content)
             )}

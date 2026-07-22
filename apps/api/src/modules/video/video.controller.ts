@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { ProcessVideoDto } from './dto/process-video.dto'
 import { SetVideoUrlDto } from './dto/set-video-url.dto'
+import { AttachKeyDto, VideoUploadUrlDto } from './dto/upload-url.dto'
 import { VideoService } from './video.service'
 
 interface MultipartFile {
@@ -46,7 +47,25 @@ export class VideoController {
     @Param('lessonId') lessonId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.video.getStreamUrl(lessonId, user.sub)
+    return this.video.getStreamUrl(lessonId, user.sub, user.role)
+  }
+
+  // Preferred upload path: presigned direct-to-object-storage (R2/S3/…).
+  @Post('lessons/:lessonId/upload-url')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN')
+  getUploadUrl(
+    @Param('lessonId') lessonId: string,
+    @Body() dto: VideoUploadUrlDto,
+  ) {
+    return this.video.getUploadUrl(lessonId, dto.filename, dto.contentType)
+  }
+
+  @Post('lessons/:lessonId/attach-key')
+  @UseGuards(RolesGuard)
+  @Roles('INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN')
+  attachKey(@Param('lessonId') lessonId: string, @Body() dto: AttachKeyDto) {
+    return this.video.attachUploadedKey(lessonId, dto.key)
   }
 
   // Attach a video by URL (mp4 / HLS .m3u8 / YouTube).

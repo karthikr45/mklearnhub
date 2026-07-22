@@ -10,13 +10,51 @@ import {
 
 import { UPLOAD_DIR } from '../../config/uploads'
 import { PrismaService } from '../../prisma/prisma.service'
+import { StorageService } from '../storage/storage.service'
+
+const STAFF = ['INSTRUCTOR', 'ORG_ADMIN', 'SUPER_ADMIN']
 
 @Injectable()
 export class VideoService {
   private readonly logger = new Logger(VideoService.name)
   private ffmpegChecked?: boolean
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  /** R2/S3 keys are content-addressed paths; local files are absolute paths. */
+  private isObjectKey(key?: string | null): boolean {
+    return Boolean(key && !key.startsWith('/'))
+  }
+
+  /**
+   * Step 1 of an object-storage upload: a presigned PUT URL the browser uploads
+   * the file to directly (bytes never touch the API). Works with any configured
+   * S3-compatible provider (R2/S3/B2/…).
+   */
+  async getUploadUrl(lessonId: string, filename: string, contentType: string) {
+    await this.lessonOrThrow(lessonId)
+    if (!this.storage.isConfigured()) {
+      throw new NotFoundException(
+        'Object storage is not configured. Set STORAGE_* env vars.',
+      )
+    }
+    const key = this.storage.keyFor('lesson-video', lessonId, filename)
+    const { url } = await this.storage.getPresignedUploadUrl(key, contentType)
+    return { url, key, method: 'PUT' as const }
+  }
+
+  /** Step 2: point the lesson at the uploaded object. */
+  async attachUploadedKey(lessonId: string, key: string) {
+    await this.lessonOrThrow(lessonId)
+    const videoUrl = await this.storage.deliveryUrl(key, true)
+    return this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: { videoKey: key, videoUrl, hlsUrl: null },
+    })
+  }
 
   private async lessonOrThrow(lessonId: string) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -113,24 +151,28 @@ export class VideoService {
     })
   }
 
-  async getStreamUrl(lessonId: string, userId: string) {
+  async getStreamUrl(lessonId: string, userId: string, role?: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       include: { chapter: true },
     })
     if (!lesson) throw new NotFoundException('Lesson not found')
 
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId, courseId: lesson.chapter.courseId } },
-    })
-    if (!enrollment && !lesson.isFreePreview) {
-      throw new ForbiddenException('Not enrolled in this course')
+    const isStaff = Boolean(role && STAFF.includes(role))
+    if (!isStaff && !lesson.isFreePreview) {
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId: lesson.chapter.courseId } },
+      })
+      if (!enrollment) throw new ForbiddenException('Not enrolled in this course')
     }
 
-    return {
-      lessonId,
-      videoUrl: lesson.videoUrl,
-      hlsUrl: lesson.hlsUrl,
+    // For object-storage-backed videos, mint a FRESH delivery URL each time
+    // (a stored signed URL would expire; a CDN/public base is returned as-is).
+    let videoUrl = lesson.videoUrl
+    if (this.isObjectKey(lesson.videoKey)) {
+      videoUrl = await this.storage.deliveryUrl(lesson.videoKey as string, true)
     }
+
+    return { lessonId, videoUrl, hlsUrl: lesson.hlsUrl }
   }
 }
