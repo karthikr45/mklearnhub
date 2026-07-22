@@ -60,6 +60,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard/analytics', label: 'Analytics', icon: 'chart', roles: STAFF_ROLES },
   { href: '/dashboard/safety', label: 'Safety', icon: 'shield', roles: STAFF_ROLES },
   // Admin only
+  { href: '/dashboard/curriculum', label: 'Curriculum', icon: 'grad', roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },
   { href: '/dashboard/content', label: 'Content Studio', icon: 'library', roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },
   { href: '/dashboard/portals', label: 'Portals', icon: 'globe', roles: ['ORG_ADMIN'] },
   { href: '/dashboard/members', label: 'Members', icon: 'users', roles: ['ORG_ADMIN'] },

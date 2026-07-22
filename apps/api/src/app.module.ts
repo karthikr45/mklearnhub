@@ -22,6 +22,7 @@ import { GamificationModule } from './modules/gamification/gamification.module'
 import { HrmsModule } from './modules/hrms/hrms.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { ContentModule } from './modules/content/content.module'
+import { CurriculumModule } from './modules/curriculum/curriculum.module'
 import { PushModule } from './modules/push/push.module'
 import { RoomsModule } from './modules/rooms/rooms.module'
 import { OrganizationsModule } from './modules/organizations/organizations.module'
@@ -69,6 +70,7 @@ import { PrismaModule } from './prisma/prisma.module'
     PushModule,
     RoomsModule,
     ContentModule,
+    CurriculumModule,
     BillingModule,
     SearchModule,
     SsoModule,
