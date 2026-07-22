@@ -50,6 +50,13 @@ async function main() {
     create: { yearId: year.id, code: 'GRADE_10', name: 'Grade 10', level: 10, order: 10, status: PUB },
   })
 
+  // This seed is AUTHORITATIVE for the CBSE Grade 10 tree: wipe and rebuild it
+  // so every run converges to exactly the definitions below (removes any stale
+  // or previously-incorrect chapters). Cascades to units/books/chapters/topics/
+  // objectives for THIS grade only — organizations, users and content assets are
+  // never touched.
+  await prisma.curriculumSubject.deleteMany({ where: { gradeId: grade.id } })
+
   const subject = async (code: string, title: string, order: number) =>
     prisma.curriculumSubject.upsert({
       where: { gradeId_code: { gradeId: grade.id, code } },
@@ -201,30 +208,41 @@ async function main() {
     await chapter(english.id, ch, 100 + i, { bookId: footprints.id })
   }
 
-  // ── Hindi (Course A) — Kshitij + Kritika ──
+  // ── Hindi Course A — Kshitij Bhag-2 (क्षितिज भाग-2) ──
+  // Verified against the NCERT textbook पाठ सूची (contents page).
   const hindi = await subject('HINDI', 'Hindi', 5)
-  const kshitij = await findOrCreateBook(hindi.id, 'Kshitij (क्षितिज)', 0)
-  const kshitijChapters = [
-    'सूरदास – पद', 'तुलसीदास – राम-लक्ष्मण-परशुराम संवाद', 'देव – सवैया और कवित्त',
-    'जयशंकर प्रसाद – आत्मकथ्य', 'सूर्यकांत त्रिपाठी निराला – उत्साह, अट नहीं रही है',
-    'नागार्जुन – यह दंतुरहित मुस्कान, फसल', 'गिरिजाकुमार माथुर – छाया मत छूना',
-    'ऋतुराज – कन्यादान', 'मंगलेश डबराल – संगतकार',
-    'प्रेमचंद – बालगोबिन भगत', 'रामवृक्ष बेनीपुरी – लखनवी अंदाज़',
-    'यशपाल – दुःख का अधिकार', 'सर्वेश्वर दयाल सक्सेना – एक कहानी यह भी',
-    'मन्नू भंडारी – स्त्री शिक्षा के विरोधी कुतर्कों का खंडन',
-    'महावीर प्रसाद द्विवेदी – नौबतखाने में इबादत', 'यतींद्र मिश्र – संस्कृति',
+  const kshitij = await findOrCreateBook(hindi.id, 'क्षितिज भाग-2 (Kshitij)', 0)
+  const padyaKhand = await findOrCreateUnit(hindi.id, 'PADYA_KHAND', 'पद्य खंड', 0)
+  const gadyaKhand = await findOrCreateUnit(hindi.id, 'GADYA_KHAND', 'गद्य खंड', 1)
+  // पद्य खंड (Poetry) — 1–7
+  const kshitijPadya = [
+    'कबीर – साखी',
+    'मीरा – पद',
+    'मैथिलीशरण गुप्त – मनुष्यता',
+    'सुमित्रानंदन पंत – पर्वत प्रदेश में पावस',
+    'वीरेन डंगवाल – तोप',
+    'कैफ़ी आज़मी – कर चले हम फ़िदा',
+    'रवींद्रनाथ ठाकुर – आत्मत्राण',
   ]
-  for (const [i, ch] of kshitijChapters.entries()) {
-    await chapter(hindi.id, ch, i, { bookId: kshitij.id })
+  for (const [i, ch] of kshitijPadya.entries()) {
+    await chapter(hindi.id, ch, i, { bookId: kshitij.id, unitId: padyaKhand.id })
   }
-  const kritika = await findOrCreateBook(hindi.id, 'Kritika (कृतिका)', 1)
-  const kritikaChapters = [
-    'माता का अँचल', 'जॉर्ज पंचम की नाक', 'साना-साना हाथ जोड़ि',
-    'एही ठैयाँ झुलनी हेरानी हो रामा!', 'मैं क्यों लिखता हूँ',
+  // गद्य खंड (Prose) — 8–14
+  const kshitijGadya = [
+    'प्रेमचंद – बड़े भाई साहब',
+    'सीताराम सेकसरिया – डायरी का एक पन्ना',
+    'लीलाधर मंडलोई – तताँरा-वामीरो कथा',
+    'प्रह्लाद अग्रवाल – तीसरी कसम के शिल्पकार शैलेंद्र',
+    'निदा फ़ाज़ली – अब कहाँ दूसरे के दुख से दुखी होने वाले',
+    'रवींद्र केलेकर – पतझर में टूटी पत्तियाँ',
+    'हबीब तनवीर – कारतूस (एकांकी)',
   ]
-  for (const [i, ch] of kritikaChapters.entries()) {
-    await chapter(hindi.id, ch, 100 + i, { bookId: kritika.id })
+  for (const [i, ch] of kshitijGadya.entries()) {
+    await chapter(hindi.id, ch, 7 + i, { bookId: kshitij.id, unitId: gadyaKhand.id })
   }
+  // Note: कृतिका भाग-2 (the supplementary reader) is intentionally NOT seeded
+  // from memory. Load it via CSV import or send the कृतिका पाठ सूची photo and it
+  // will be added exactly.
 
   const counts = await prisma.$transaction([
     prisma.curriculumSubject.count({ where: { gradeId: grade.id } }),
@@ -233,9 +251,9 @@ async function main() {
     prisma.learningObjective.count(),
   ])
   console.warn(
-    `✅ CBSE Grade 10 ready: ${counts[0]} subjects, ${counts[1]} chapters, ${counts[2]} topics, ${counts[3]} learning objectives.`,
+    `✅ CBSE Grade 10 rebuilt: ${counts[0]} subjects, ${counts[1]} chapters, ${counts[2]} topics, ${counts[3]} learning objectives.`,
   )
-  console.warn('   (No existing data was deleted.)')
+  console.warn('   (Only the CBSE Grade 10 curriculum tree was rebuilt — organizations, users and content assets were NOT touched.)')
 }
 
 main()

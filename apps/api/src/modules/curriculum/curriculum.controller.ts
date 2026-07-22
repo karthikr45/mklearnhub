@@ -1,15 +1,35 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { IsString } from 'class-validator'
 
+import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { CurriculumImportService } from './curriculum-import.service'
 import { CurriculumService } from './curriculum.service'
+
+class ImportCsvDto {
+  @IsString()
+  csv!: string
+}
 
 @ApiTags('curriculum')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('curriculum')
 export class CurriculumController {
-  constructor(private readonly curriculum: CurriculumService) {}
+  constructor(
+    private readonly curriculum: CurriculumService,
+    private readonly importer: CurriculumImportService,
+  ) {}
+
+  /** Load a verified syllabus from CSV (admin only). Idempotent. */
+  @Post('import')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  importCsv(@Body() dto: ImportCsvDto) {
+    return this.importer.importCsv(dto.csv)
+  }
 
   @Get('boards')
   boards() {

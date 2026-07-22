@@ -1,11 +1,131 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { BookOpen, ChevronRight, GraduationCap, Layers } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { BookOpen, ChevronRight, Download, FileUp, GraduationCap, Layers, Upload } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
+
+const CSV_TEMPLATE = `board,board_name,year,grade,subject,unit,book,chapter,topic
+CBSE,CBSE,2026-27,Grade 10,Science,,,Chemical Reactions and Equations,Chemical Equations
+CBSE,CBSE,2026-27,Grade 10,Science,,,Chemical Reactions and Equations,Types of Chemical Reactions
+CBSE,CBSE,2026-27,Grade 10,Mathematics,Algebra,,Quadratic Equations,
+CBSE,CBSE,2026-27,Grade 10,Hindi,,क्षितिज भाग-2 (Kshitij),कबीर – साखी,
+`
+
+interface ImportResult {
+  rows: number
+  boards: number
+  subjects: number
+  chapters: number
+  topics: number
+  errors: { line: number; message: string }[]
+}
+
+function ImportPanel() {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [csv, setCsv] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<ImportResult | null>(null)
+
+  const download = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'curriculum-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const run = async () => {
+    if (!csv.trim()) return
+    setBusy(true)
+    setResult(null)
+    try {
+      const { data } = await api.post<ImportResult>('/curriculum/import', { csv })
+      setResult(data)
+      await qc.invalidateQueries({ queryKey: ['curriculum-tree'] })
+      toast.success(`Imported ${data.chapters} chapters, ${data.topics} topics`)
+    } catch {
+      toast.error('Import failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mb-6 card-elevated p-4">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-sm font-semibold"
+      >
+        <span className="flex items-center gap-1.5">
+          <FileUp className="h-4 w-4 text-primary" /> Import a verified syllabus (CSV)
+        </span>
+        <ChevronRight className={`h-4 w-4 transition-transform ${open ? 'rotate-90' : ''}`} />
+      </button>
+      {open && (
+        <div className="mt-3 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            The authoritative way to load an exact syllabus. Columns:
+            <code className="mx-1 rounded bg-muted px-1">board, board_name, year, grade, subject, unit, book, chapter, topic</code>
+            (board, year, grade, subject, chapter required). Re-importing the same file is safe (idempotent).
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={download} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
+              <Download className="h-3.5 w-3.5" /> Download template
+            </button>
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
+              <Upload className="h-3.5 w-3.5" /> Load .csv file
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setCsv(await f.text())
+                }}
+              />
+            </label>
+          </div>
+          <textarea
+            value={csv}
+            onChange={(e) => setCsv(e.target.value)}
+            placeholder="Paste CSV here, or load a .csv file…"
+            rows={6}
+            className="w-full rounded-md border px-3 py-2 font-mono text-xs"
+          />
+          <button
+            onClick={run}
+            disabled={busy || !csv.trim()}
+            className="mk-brand-bg rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {busy ? 'Importing…' : 'Import'}
+          </button>
+          {result && (
+            <div className="rounded-lg border bg-muted/20 p-3 text-xs">
+              <p className="font-medium">
+                {result.rows} rows · {result.chapters} chapters · {result.topics} topics ·{' '}
+                {result.subjects} subjects
+              </p>
+              {result.errors.length > 0 && (
+                <ul className="mt-2 space-y-0.5 text-destructive">
+                  {result.errors.slice(0, 10).map((er, i) => (
+                    <li key={i}>Line {er.line}: {er.message}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface MappedContent {
   mappingId: string
@@ -86,6 +206,8 @@ export default function CurriculumPage() {
         title="Curriculum"
         description="Browse the curriculum tree. Content you upload in Content Studio maps to these chapters and topics."
       />
+
+      <ImportPanel />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
