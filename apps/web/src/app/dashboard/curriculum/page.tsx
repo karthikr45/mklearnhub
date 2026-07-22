@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, ChevronRight, Download, FileUp, GraduationCap, Layers, Upload } from 'lucide-react'
+import { BookOpen, ChevronRight, Download, FileUp, GraduationCap, Layers, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -180,6 +180,31 @@ function NodeCoverage({
   )
 }
 
+function NodeAction({
+  icon: Icon,
+  title,
+  onClick,
+  danger,
+}: {
+  icon: typeof Pencil
+  title: string
+  onClick: () => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={`rounded p-1.5 text-muted-foreground transition hover:bg-background ${
+        danger ? 'hover:text-destructive' : 'hover:text-foreground'
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  )
+}
+
 interface Topic { id: string; title: string }
 interface Chapter { id: string; title: string; unitId: string | null; bookId: string | null; topics: Topic[] }
 interface Unit { id: string; title: string }
@@ -193,12 +218,47 @@ interface Tree {
 }
 
 export default function CurriculumPage() {
+  const qc = useQueryClient()
   const { data, isLoading } = useQuery({
     queryKey: ['curriculum-tree'],
     queryFn: async () => (await api.get<Tree>('/curriculum/tree')).data,
   })
   const [openSubject, setOpenSubject] = useState<string | null>(null)
   const [openChapter, setOpenChapter] = useState<string | null>(null)
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ['curriculum-tree'] })
+  const addNode = async (type: string, parentId: string, label: string) => {
+    const title = window.prompt(`New ${label} name`)?.trim()
+    if (!title) return
+    try {
+      await api.post(`/curriculum/nodes/${type}`, { parentId, title })
+      refresh()
+      toast.success(`${label} added`)
+    } catch {
+      toast.error(`Could not add ${label}`)
+    }
+  }
+  const renameNode = async (type: string, id: string, current: string) => {
+    const title = window.prompt('Rename', current)?.trim()
+    if (!title || title === current) return
+    try {
+      await api.patch(`/curriculum/nodes/${type}/${id}`, { title })
+      refresh()
+      toast.success('Renamed')
+    } catch {
+      toast.error('Could not rename')
+    }
+  }
+  const deleteNode = async (type: string, id: string, label: string) => {
+    if (!window.confirm(`Delete "${label}"? This also removes everything under it.`)) return
+    try {
+      await api.delete(`/curriculum/nodes/${type}/${id}`)
+      refresh()
+      toast.success('Deleted')
+    } catch {
+      toast.error('Could not delete')
+    }
+  }
 
   return (
     <div>
@@ -232,9 +292,17 @@ export default function CurriculumPage() {
 
           {data.grades.map((grade) => (
             <section key={grade.id} className="mb-8">
-              <h2 className="mb-3 flex items-center gap-1.5 text-lg font-semibold">
-                <GraduationCap className="h-5 w-5 text-primary" /> {grade.name}
-              </h2>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+                  <GraduationCap className="h-5 w-5 text-primary" /> {grade.name}
+                </h2>
+                <button
+                  onClick={() => addNode('subject', grade.id, 'subject')}
+                  className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add subject
+                </button>
+              </div>
               <div className="space-y-2">
                 {grade.subjects.map((subject) => {
                   const open = openSubject === subject.id
@@ -242,19 +310,26 @@ export default function CurriculumPage() {
                   const byBook = (chId: string) => subject.books.find((b) => b.id === chId)?.title
                   return (
                     <div key={subject.id} className="card-elevated overflow-hidden">
-                      <button
-                        onClick={() => setOpenSubject(open ? null : subject.id)}
-                        className="flex w-full items-center justify-between px-4 py-3 text-left font-medium hover:bg-accent/50"
-                      >
-                        <span className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-muted-foreground" />
-                          {subject.title}
-                          <span className="text-xs font-normal text-muted-foreground">
-                            {subject.chapters.length} chapters
+                      <div className="flex items-center hover:bg-accent/50">
+                        <button
+                          onClick={() => setOpenSubject(open ? null : subject.id)}
+                          className="flex flex-1 items-center justify-between px-4 py-3 text-left font-medium"
+                        >
+                          <span className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            {subject.title}
+                            <span className="text-xs font-normal text-muted-foreground">
+                              {subject.chapters.length} chapters
+                            </span>
                           </span>
-                        </span>
-                        <ChevronRight className={`h-4 w-4 transition-transform ${open ? 'rotate-90' : ''}`} />
-                      </button>
+                          <ChevronRight className={`h-4 w-4 transition-transform ${open ? 'rotate-90' : ''}`} />
+                        </button>
+                        <div className="flex items-center gap-1 pr-3">
+                          <NodeAction icon={Plus} title="Add chapter" onClick={() => addNode('chapter', subject.id, 'chapter')} />
+                          <NodeAction icon={Pencil} title="Rename subject" onClick={() => renameNode('subject', subject.id, subject.title)} />
+                          <NodeAction icon={Trash2} title="Delete subject" danger onClick={() => deleteNode('subject', subject.id, subject.title)} />
+                        </div>
+                      </div>
                       {open && (
                         <div className="border-t p-3">
                           <ul className="space-y-1">
@@ -263,27 +338,38 @@ export default function CurriculumPage() {
                               const group = (ch.unitId && byUnit(ch.unitId)) || (ch.bookId && byBook(ch.bookId))
                               return (
                                 <li key={ch.id} className="rounded-md">
-                                  <button
-                                    onClick={() => setOpenChapter(cOpen ? null : ch.id)}
-                                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-accent/50"
-                                  >
-                                    <span>
-                                      <span className="text-muted-foreground">{i + 1}. </span>
-                                      {ch.title}
-                                      {group && (
-                                        <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
-                                          {group}
-                                        </span>
-                                      )}
-                                    </span>
-                                    <ChevronRight className={`h-3.5 w-3.5 transition-transform ${cOpen ? 'rotate-90' : ''}`} />
-                                  </button>
+                                  <div className="flex items-center rounded-md hover:bg-accent/50">
+                                    <button
+                                      onClick={() => setOpenChapter(cOpen ? null : ch.id)}
+                                      className="flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left text-sm"
+                                    >
+                                      <span>
+                                        <span className="text-muted-foreground">{i + 1}. </span>
+                                        {ch.title}
+                                        {group && (
+                                          <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
+                                            {group}
+                                          </span>
+                                        )}
+                                      </span>
+                                      <ChevronRight className={`h-3.5 w-3.5 transition-transform ${cOpen ? 'rotate-90' : ''}`} />
+                                    </button>
+                                    <div className="flex items-center gap-1 pr-2">
+                                      <NodeAction icon={Plus} title="Add topic" onClick={() => addNode('topic', ch.id, 'topic')} />
+                                      <NodeAction icon={Pencil} title="Rename chapter" onClick={() => renameNode('chapter', ch.id, ch.title)} />
+                                      <NodeAction icon={Trash2} title="Delete chapter" danger onClick={() => deleteNode('chapter', ch.id, ch.title)} />
+                                    </div>
+                                  </div>
                                   {cOpen && (
                                     <div className="ml-6 mt-1 space-y-2 border-l pl-3">
                                       <NodeCoverage nodeType="CHAPTER" nodeId={ch.id} label="Chapter content" />
                                       {ch.topics.map((t) => (
                                         <div key={t.id}>
-                                          <p className="py-1 text-sm">{t.title}</p>
+                                          <div className="flex items-center gap-1">
+                                            <p className="flex-1 py-1 text-sm">{t.title}</p>
+                                            <NodeAction icon={Pencil} title="Rename topic" onClick={() => renameNode('topic', t.id, t.title)} />
+                                            <NodeAction icon={Trash2} title="Delete topic" danger onClick={() => deleteNode('topic', t.id, t.title)} />
+                                          </div>
                                           <div className="pl-3">
                                             <NodeCoverage nodeType="TOPIC" nodeId={t.id} />
                                           </div>
