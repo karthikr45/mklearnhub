@@ -841,6 +841,9 @@ async function main() {
     },
   ]
 
+  // Collect global question ids per exam track so we can build global tests.
+  const globalQByTrack: Record<string, string[]> = {}
+  const globalSubjectByName: Record<string, string> = {}
   for (const [si, subj] of globalCurriculum.entries()) {
     const subject = await prisma.subject.create({
       data: {
@@ -852,6 +855,7 @@ async function main() {
         order: 100 + si,
       },
     })
+    globalSubjectByName[subj.name] = subject.id
     for (const [ci, ch] of subj.chapters.entries()) {
       const chapter = await prisma.syllabusChapter.create({
         data: { subjectId: subject.id, name: ch.name, order: ci },
@@ -861,7 +865,7 @@ async function main() {
           data: { chapterId: chapter.id, name: top.name, order: ti },
         })
         for (const q of top.questions) {
-          await prisma.assessmentQuestion.create({
+          const createdQ = await prisma.assessmentQuestion.create({
             data: {
               subjectId: subject.id,
               chapterId: chapter.id,
@@ -876,7 +880,120 @@ async function main() {
               marks: 1,
             },
           })
+          ;(globalQByTrack[q.examTrack] ??= []).push(createdQ.id)
         }
+      }
+    }
+  }
+
+  // ─── Global mock/practice tests (organizationId: null) ───────
+  // So a school-less self-study learner sees real "Tests & mock exams".
+  const globalTests: {
+    title: string
+    type: 'CHAPTER_TEST' | 'MOCK_TEST' | 'PREVIOUS_YEAR'
+    track: string
+    subject?: string
+    durationMins: number
+    negativeMarking?: boolean
+  }[] = [
+    { title: 'Class 10 Maths — Chapter Test', type: 'CHAPTER_TEST', track: 'BOARD_SSC', subject: 'Mathematics', durationMins: 20 },
+    { title: 'JEE Main — Physics Mock 1', type: 'MOCK_TEST', track: 'JEE_MAIN', subject: 'Physics', durationMins: 180, negativeMarking: true },
+    { title: 'NEET — Biology Practice Test', type: 'MOCK_TEST', track: 'NEET', subject: 'Biology', durationMins: 60 },
+  ]
+  for (const t of globalTests) {
+    const qids = globalQByTrack[t.track] ?? []
+    if (qids.length === 0) continue
+    const subjectId = t.subject ? globalSubjectByName[t.subject] : undefined
+    const test = await prisma.assessment.create({
+      data: {
+        title: t.title,
+        type: t.type,
+        // organizationId omitted → global, visible to self-study learners
+        ...(subjectId ? { subjectId } : {}),
+        examTrack: t.track as never,
+        durationMins: t.durationMins,
+        ...(t.negativeMarking ? { negativeMarking: true } : {}),
+        isPublished: true,
+      },
+    })
+    await prisma.assessmentItem.createMany({
+      data: qids.map((qid, i) => ({ assessmentId: test.id, questionId: qid, order: i })),
+    })
+  }
+
+  // ─── Platform org + public self-study course catalog ─────────
+  // Courses require a non-null org, so the global catalog lives under one
+  // LearnHub-owned "platform" org (isPlatform). Any authenticated learner can
+  // browse and enrol in these regardless of their own organization.
+  const platformOrg = await prisma.organization.create({
+    data: {
+      name: 'LearnHub',
+      slug: 'learnhub-platform',
+      type: 'BUSINESS',
+      isPlatform: true,
+      plan: 'ENTERPRISE',
+      maxCourses: 1000,
+      maxUsers: 1000,
+    },
+  })
+  const platformInstructor = await prisma.user.create({
+    data: {
+      email: 'academics@learnhub.com',
+      name: 'LearnHub Academics',
+      role: 'INSTRUCTOR',
+      organizationId: platformOrg.id,
+      passwordHash: PASSWORD_HASH,
+      emailVerified: true,
+      onboarded: true,
+    },
+  })
+
+  const catalog: { title: string; desc: string; level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'; tags: string[] }[] = [
+    { title: 'Class 10 Mathematics — CBSE', desc: 'Full CBSE Class 10 Maths: algebra, geometry, trigonometry and more, with practice.', level: 'BEGINNER', tags: ['SCHOOL', 'CBSE', 'Class 10', 'Mathematics', 'BOARD_CBSE'] },
+    { title: 'Class 10 Science — State Board', desc: 'Physics, Chemistry and Biology for Class 10 State syllabus.', level: 'BEGINNER', tags: ['SCHOOL', 'TELANGANA_STATE', 'ANDHRA_PRADESH_STATE', 'Class 10', 'Science', 'BOARD_SSC'] },
+    { title: 'Intermediate MPC — Physics (1st Year)', desc: 'Intermediate 1st year Physics for the MPC group, aligned to TS/AP Intermediate.', level: 'INTERMEDIATE', tags: ['INTERMEDIATE', 'MPC', 'Physics', 'TELANGANA_INTERMEDIATE', 'ANDHRA_PRADESH_INTERMEDIATE'] },
+    { title: 'JEE Main — Complete Physics', desc: 'Concept-first JEE Main Physics with previous-year patterns and mocks.', level: 'ADVANCED', tags: ['ENGINEERING', 'JEE_MAIN', 'JEE_ADVANCED', 'Physics'] },
+    { title: 'NEET — Biology Crash Course', desc: 'High-yield NEET Biology: Botany and Zoology with NCERT alignment.', level: 'ADVANCED', tags: ['ENGINEERING', 'NEET', 'Biology'] },
+    { title: 'EAMCET — Mathematics', desc: 'TS/AP EAMCET Engineering Mathematics with speed-solving techniques.', level: 'INTERMEDIATE', tags: ['ENGINEERING', 'EAPCET_ENGINEERING', 'Mathematics'] },
+    { title: 'Aptitude & Logical Reasoning', desc: 'Quantitative aptitude and reasoning for entrance and placement tests.', level: 'BEGINNER', tags: ['OTHER', 'Aptitude/Reasoning', 'MBA', 'CAT'] },
+    { title: 'Spoken English & Communication', desc: 'Build fluency and confidence in everyday and professional English.', level: 'BEGINNER', tags: ['OTHER', 'English/Communication', 'Spoken languages'] },
+    { title: 'Python Programming — Basics', desc: 'Start coding with Python: fundamentals, logic and small projects.', level: 'BEGINNER', tags: ['OTHER', 'Coding'] },
+    { title: 'General Knowledge & Current Affairs', desc: 'Stay sharp on GK and current affairs for exams and interviews.', level: 'BEGINNER', tags: ['OTHER', 'GK/Current affairs'] },
+  ]
+  for (const [i, c] of catalog.entries()) {
+    const course = await prisma.course.create({
+      data: {
+        title: c.title,
+        slug: slugify(c.title),
+        organizationId: platformOrg.id,
+        instructorId: platformInstructor.id,
+        status: 'PUBLISHED',
+        isPublic: true,
+        isFree: true,
+        publishedAt: new Date('2026-02-01'),
+        description: c.desc,
+        level: c.level,
+        tags: c.tags,
+        totalLessons: 6,
+        durationMins: 180,
+        enrollmentCount: 50 + i * 7,
+      },
+    })
+    for (let ch = 1; ch <= 3; ch++) {
+      const chapter = await prisma.chapter.create({
+        data: { title: `Module ${ch}`, courseId: course.id, order: ch },
+      })
+      for (let l = 1; l <= 2; l++) {
+        await prisma.lesson.create({
+          data: {
+            title: `${c.title} — Lesson ${ch}.${l}`,
+            chapterId: chapter.id,
+            type: 'VIDEO',
+            order: l,
+            isPublished: true,
+            videoDurationSecs: 600,
+          },
+        })
       }
     }
   }

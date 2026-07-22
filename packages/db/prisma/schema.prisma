@@ -19,6 +19,9 @@ model Organization {
   domain     String?  @unique
   plan       Plan     @default(FREE)
   isActive   Boolean  @default(true)
+  // The single LearnHub-owned org that hosts the public self-study catalog
+  // (courses have a required org, so global courses live under this platform org).
+  isPlatform Boolean  @default(false)
   settings   Json     @default("{}")
   maxUsers   Int      @default(5)
   maxCourses Int      @default(5)
