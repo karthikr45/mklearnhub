@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { IsString } from 'class-validator'
+import type { JwtPayload } from '@learnhub/types'
 
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
@@ -34,6 +36,18 @@ export class CurriculumController {
   @Get('boards')
   boards() {
     return this.curriculum.getBoards()
+  }
+
+  /** The curriculum for the signed-in learner, resolved from their profile. */
+  @Get('for-me')
+  forMe(@CurrentUser() user: JwtPayload) {
+    return this.curriculum.getForLearner(user.sub)
+  }
+
+  /** A single published content asset (with delivery URL) for students. */
+  @Get('content/:id')
+  content(@Param('id') id: string) {
+    return this.curriculum.getPublishedContent(id)
   }
 
   @Get('tree')

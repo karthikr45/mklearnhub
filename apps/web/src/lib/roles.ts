@@ -37,6 +37,7 @@ const ALL: Role[] = [
 export const NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard', label: 'Home', icon: 'home', roles: ALL },
   // Learner / student
+  { href: '/dashboard/syllabus', label: 'My Syllabus', icon: 'book', roles: LEARNER_ROLES },
   { href: '/dashboard/learning', label: 'My Learning', icon: 'grad', roles: LEARNER_ROLES },
   { href: '/dashboard/explore', label: 'Explore', icon: 'compass', roles: LEARNER_ROLES },
   { href: '/dashboard/certificates', label: 'Certificates', icon: 'award', roles: LEARNER_ROLES },
