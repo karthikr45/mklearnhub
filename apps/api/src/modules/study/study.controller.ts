@@ -13,7 +13,11 @@ import type { JwtPayload } from '@learnhub/types'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { CurriculumService } from './curriculum.service'
-import { StartPracticeDto, SubmitAttemptDto } from './dto/practice.dto'
+import {
+  StartCurriculumPracticeDto,
+  StartPracticeDto,
+  SubmitAttemptDto,
+} from './dto/practice.dto'
 import { PracticeService } from './practice.service'
 import { ProgressService } from './progress.service'
 
@@ -87,6 +91,29 @@ export class StudyController {
     @Body() dto: StartPracticeDto,
   ) {
     return this.practice.startPractice(user.sub, user.orgId, dto)
+  }
+
+  /** How many practice questions a curriculum node offers (for the syllabus). */
+  @Get('curriculum-practice/:nodeType/:nodeId/count')
+  curriculumPracticeCount(
+    @Param('nodeType') nodeType: string,
+    @Param('nodeId') nodeId: string,
+  ) {
+    return this.practice.curriculumPracticeCount(nodeType, nodeId)
+  }
+
+  /** Start a scored practice set from questions mapped to a curriculum node. */
+  @Post('curriculum-practice/start')
+  startCurriculumPractice(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: StartCurriculumPracticeDto,
+  ) {
+    return this.practice.startCurriculumPractice(
+      user.sub,
+      dto.nodeType,
+      dto.nodeId,
+      dto.limit,
+    )
   }
 
   @Get('attempts')

@@ -1,16 +1,19 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   BookOpen,
   ChevronRight,
   FileText,
   GraduationCap,
+  PencilLine,
   PlayCircle,
   Sparkles,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { ContentViewer } from '@/components/content/ContentViewer'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -41,6 +44,43 @@ const SECTION_LABEL: Record<string, string> = {
   PRACTICE: 'Practice',
   TEST: 'Test',
   OFFICIAL: 'Official resources',
+}
+
+/** "Practice" button — appears only when the node has mapped questions. */
+function PracticeButton({ nodeType, nodeId }: { nodeType: string; nodeId: string }) {
+  const router = useRouter()
+  const { data } = useQuery({
+    queryKey: ['practice-count', nodeType, nodeId],
+    queryFn: async () =>
+      (
+        await api.get<{ count: number }>(
+          `/study/curriculum-practice/${nodeType}/${nodeId}/count`,
+        )
+      ).data,
+  })
+  const start = useMutation({
+    mutationFn: async () =>
+      (
+        await api.post<{ attemptId: string }>('/study/curriculum-practice/start', {
+          nodeType,
+          nodeId,
+          limit: 10,
+        })
+      ).data,
+    onSuccess: (d) => router.push(`/dashboard/study/attempt/${d.attemptId}`),
+    onError: () => toast.error('Could not start practice'),
+  })
+  if (!data || data.count === 0) return null
+  return (
+    <button
+      onClick={() => start.mutate()}
+      disabled={start.isPending}
+      className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+    >
+      <PencilLine className="h-3.5 w-3.5" />
+      {start.isPending ? 'Starting…' : `Practice (${data.count})`}
+    </button>
+  )
 }
 
 function TopicContent({
@@ -183,10 +223,16 @@ export default function SyllabusPage() {
                               </button>
                               {cOpen && (
                                 <div className="ml-4 space-y-3 border-l pl-3 pt-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <PracticeButton nodeType="CHAPTER" nodeId={ch.id} />
+                                  </div>
                                   <TopicContent nodeType="CHAPTER" nodeId={ch.id} onOpen={setViewAsset} />
                                   {ch.topics.map((t) => (
                                     <div key={t.id}>
-                                      <p className="text-sm font-medium">{t.title}</p>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="text-sm font-medium">{t.title}</p>
+                                        <PracticeButton nodeType="TOPIC" nodeId={t.id} />
+                                      </div>
                                       <div className="mt-1">
                                         <TopicContent nodeType="TOPIC" nodeId={t.id} onOpen={setViewAsset} />
                                       </div>

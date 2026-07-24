@@ -112,6 +112,113 @@ export class PracticeService {
     }
   }
 
+  /**
+   * All curriculum node refs covered by a practice on `nodeType/nodeId`: the
+   * node itself plus its descendants, so practising a chapter includes its
+   * topics and subtopics, and a subject includes everything under it.
+   */
+  private async curriculumNodeRefs(
+    nodeType: string,
+    nodeId: string,
+  ): Promise<{ nodeType: string; nodeId: string }[]> {
+    const refs: { nodeType: string; nodeId: string }[] = [{ nodeType, nodeId }]
+    const add = (t: string, ids: string[]) =>
+      ids.forEach((id) => refs.push({ nodeType: t, nodeId: id }))
+
+    if (nodeType === 'SUBJECT') {
+      const [units, books, chapters] = await Promise.all([
+        this.prisma.curriculumUnit.findMany({ where: { subjectId: nodeId }, select: { id: true } }),
+        this.prisma.curriculumBook.findMany({ where: { subjectId: nodeId }, select: { id: true } }),
+        this.prisma.curriculumChapter.findMany({ where: { subjectId: nodeId }, select: { id: true } }),
+      ])
+      add('UNIT', units.map((u) => u.id))
+      add('BOOK', books.map((b) => b.id))
+      const chapterIds = chapters.map((c) => c.id)
+      add('CHAPTER', chapterIds)
+      const topics = chapterIds.length
+        ? await this.prisma.curriculumTopic.findMany({
+            where: { chapterId: { in: chapterIds } },
+            select: { id: true },
+          })
+        : []
+      const topicIds = topics.map((t) => t.id)
+      add('TOPIC', topicIds)
+      if (topicIds.length) {
+        const subs = await this.prisma.curriculumSubtopic.findMany({
+          where: { topicId: { in: topicIds } },
+          select: { id: true },
+        })
+        add('SUBTOPIC', subs.map((s) => s.id))
+      }
+    } else if (nodeType === 'CHAPTER') {
+      const topics = await this.prisma.curriculumTopic.findMany({
+        where: { chapterId: nodeId },
+        select: { id: true },
+      })
+      const topicIds = topics.map((t) => t.id)
+      add('TOPIC', topicIds)
+      if (topicIds.length) {
+        const subs = await this.prisma.curriculumSubtopic.findMany({
+          where: { topicId: { in: topicIds } },
+          select: { id: true },
+        })
+        add('SUBTOPIC', subs.map((s) => s.id))
+      }
+    } else if (nodeType === 'TOPIC') {
+      const subs = await this.prisma.curriculumSubtopic.findMany({
+        where: { topicId: nodeId },
+        select: { id: true },
+      })
+      add('SUBTOPIC', subs.map((s) => s.id))
+    }
+    return refs
+  }
+
+  /** Question ids mapped to a curriculum node or any of its descendants. */
+  private async curriculumQuestionIds(nodeType: string, nodeId: string): Promise<string[]> {
+    const refs = await this.curriculumNodeRefs(nodeType, nodeId)
+    const mappings = await this.prisma.questionCurriculumMapping.findMany({
+      where: { OR: refs.map((r) => ({ nodeType: r.nodeType as never, nodeId: r.nodeId })) },
+      select: { questionId: true },
+    })
+    return [...new Set(mappings.map((m) => m.questionId))]
+  }
+
+  /** How many practice questions are available for a curriculum node. */
+  async curriculumPracticeCount(nodeType: string, nodeId: string): Promise<{ count: number }> {
+    const ids = await this.curriculumQuestionIds(nodeType, nodeId)
+    return { count: ids.length }
+  }
+
+  /** Start a scored practice set from questions mapped to a curriculum node. */
+  async startCurriculumPractice(
+    userId: string,
+    nodeType: string,
+    nodeId: string,
+    limit?: number,
+  ) {
+    const ids = await this.curriculumQuestionIds(nodeType, nodeId)
+    if (ids.length === 0) {
+      throw new BadRequestException('No practice questions for this topic yet')
+    }
+    const pool = await this.prisma.assessmentQuestion.findMany({
+      where: { id: { in: ids } },
+      take: 200,
+    })
+    const chosen = shuffle(pool).slice(0, Math.min(limit ?? 10, 50))
+    const attempt = await this.prisma.assessmentAttempt.create({
+      data: {
+        userId,
+        mode: 'PRACTICE',
+        status: 'IN_PROGRESS',
+        totalCount: chosen.length,
+        maxScore: chosen.reduce((sum, q) => sum + q.marks, 0),
+        responses: { create: chosen.map((q) => ({ questionId: q.id })) },
+      },
+    })
+    return { attemptId: attempt.id, questions: chosen.map(sanitize) }
+  }
+
   /** Start a fixed assessment (chapter test / mock / previous-year). */
   async startAssessment(userId: string, orgId: string | null, assessmentId: string) {
     const assessment = await this.prisma.assessment.findFirst({

@@ -11,7 +11,10 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import {
+  Allow,
+  IsArray,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator'
@@ -23,6 +26,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { CurriculumAdminService } from './curriculum-admin.service'
 import { CurriculumImportService } from './curriculum-import.service'
+import { CurriculumQuestionsService } from './curriculum-questions.service'
 import { CurriculumService } from './curriculum.service'
 
 class ImportCsvDto {
@@ -48,6 +52,17 @@ class UpdateNodeDto {
   @IsOptional() @IsString() bookId?: string | null
 }
 
+class CreateQuestionDto {
+  @IsString() text!: string
+  @IsOptional() @IsString() type?: string
+  @IsOptional() @IsString() difficulty?: string
+  @IsOptional() @IsArray() options?: { id: string; text: string }[]
+  @Allow() correctAnswer!: unknown
+  @IsOptional() @IsString() explanation?: string
+  @IsOptional() @IsInt() marks?: number
+  @IsOptional() @IsNumber() negativeMarks?: number
+}
+
 @ApiTags('curriculum')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -57,6 +72,7 @@ export class CurriculumController {
     private readonly curriculum: CurriculumService,
     private readonly importer: CurriculumImportService,
     private readonly admin: CurriculumAdminService,
+    private readonly questions: CurriculumQuestionsService,
   ) {}
 
   /** Load a verified syllabus from CSV (admin only). Idempotent. */
@@ -137,5 +153,45 @@ export class CurriculumController {
     @Query('all') all?: string,
   ) {
     return this.curriculum.getNodeContent(nodeType, nodeId, all === 'true')
+  }
+
+  // ── Curriculum-native question bank (admin) ─────────────
+  @Get('nodes/:nodeType/:nodeId/questions')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  listQuestions(
+    @Param('nodeType') nodeType: string,
+    @Param('nodeId') nodeId: string,
+  ) {
+    return this.questions.list(nodeType, nodeId)
+  }
+
+  @Post('nodes/:nodeType/:nodeId/questions')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  createQuestion(
+    @CurrentUser() user: JwtPayload,
+    @Param('nodeType') nodeType: string,
+    @Param('nodeId') nodeId: string,
+    @Body() dto: CreateQuestionDto,
+  ) {
+    return this.questions.create(
+      user.sub,
+      user.orgId,
+      user.role,
+      nodeType,
+      nodeId,
+      dto,
+    )
+  }
+
+  @Delete('question-mappings/:mappingId')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  deleteQuestion(
+    @CurrentUser() user: JwtPayload,
+    @Param('mappingId') mappingId: string,
+  ) {
+    return this.questions.remove(user.sub, mappingId)
   }
 }

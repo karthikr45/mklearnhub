@@ -5,6 +5,7 @@ import { BookOpen, ChevronRight, Download, FileUp, GraduationCap, Layers, Pencil
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { QuestionManager } from '@/components/curriculum/QuestionManager'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
 
@@ -363,6 +364,7 @@ export default function CurriculumPage() {
                                   {cOpen && (
                                     <div className="ml-6 mt-1 space-y-2 border-l pl-3">
                                       <NodeCoverage nodeType="CHAPTER" nodeId={ch.id} label="Chapter content" />
+                                      <QuestionManager nodeType="CHAPTER" nodeId={ch.id} />
                                       {ch.topics.map((t) => (
                                         <div key={t.id}>
                                           <div className="flex items-center gap-1">
@@ -372,6 +374,7 @@ export default function CurriculumPage() {
                                           </div>
                                           <div className="pl-3">
                                             <NodeCoverage nodeType="TOPIC" nodeId={t.id} />
+                                            <QuestionManager nodeType="TOPIC" nodeId={t.id} />
                                           </div>
                                         </div>
                                       ))}

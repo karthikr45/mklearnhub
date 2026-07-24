@@ -19,6 +19,9 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const PUB = 'PUBLISHED' as const
+// Marks sample practice questions created by this seed, so re-runs can clean
+// them up without touching admin- or org-authored questions.
+const SEED_MARK = 'SEED_CURRICULUM'
 
 function slugCode(s: string): string {
   return s
@@ -56,6 +59,33 @@ async function main() {
   // objectives for THIS grade only — organizations, users and content assets are
   // never touched.
   await prisma.curriculumSubject.deleteMany({ where: { gradeId: grade.id } })
+  // Clean up sample practice questions from a previous run (their curriculum
+  // mappings cascade). Admin/org-authored questions are untouched.
+  await prisma.assessmentQuestion.deleteMany({ where: { createdById: SEED_MARK } })
+
+  // A sample MCQ mapped to a curriculum node, so the student Practice flow works
+  // out of the box. Admins can edit/delete these or add their own.
+  const practiceQuestion = async (
+    nodeType: string,
+    nodeId: string,
+    text: string,
+    options: { id: string; text: string }[],
+    correct: string,
+    explanation: string,
+  ) =>
+    prisma.assessmentQuestion.create({
+      data: {
+        type: 'MCQ',
+        difficulty: 'EASY',
+        text,
+        options,
+        correctAnswer: correct,
+        explanation,
+        marks: 1,
+        createdById: SEED_MARK,
+        curriculumLinks: { create: { nodeType: nodeType as never, nodeId } },
+      },
+    })
 
   const subject = async (code: string, title: string, order: number) =>
     prisma.curriculumSubject.upsert({
@@ -165,6 +195,56 @@ async function main() {
   await subtopic(tEffects.id, 'Corrosion', 0)
   await subtopic(tEffects.id, 'Rancidity', 1)
   await objective(tEffects.id, 'CRE_EF_1', 'Explain corrosion and rancidity with everyday examples and suggest ways to prevent them.', 0)
+
+  // Sample practice questions (basic, unambiguous) so the Practice flow is live.
+  await practiceQuestion(
+    'TOPIC', tTypes.id,
+    'The reaction $2H_2 + O_2 \\rightarrow 2H_2O$ is an example of which type of reaction?',
+    [
+      { id: 'A', text: 'Combination reaction' },
+      { id: 'B', text: 'Decomposition reaction' },
+      { id: 'C', text: 'Displacement reaction' },
+      { id: 'D', text: 'Double displacement reaction' },
+    ],
+    'A',
+    'Two or more reactants combine to form a single product, so it is a combination reaction.',
+  )
+  await practiceQuestion(
+    'TOPIC', tTypes.id,
+    'In the reaction $Zn + CuSO_4 \\rightarrow ZnSO_4 + Cu$, zinc is:',
+    [
+      { id: 'A', text: 'Oxidised' },
+      { id: 'B', text: 'Reduced' },
+      { id: 'C', text: 'Neither oxidised nor reduced' },
+      { id: 'D', text: 'Acting as a catalyst' },
+    ],
+    'A',
+    'Zinc loses electrons (its oxidation state rises from 0 to +2), so it is oxidised.',
+  )
+  await practiceQuestion(
+    'TOPIC', tTypes.id,
+    'Heating calcium carbonate, $CaCO_3 \\rightarrow CaO + CO_2$, is an example of a:',
+    [
+      { id: 'A', text: 'Combination reaction' },
+      { id: 'B', text: 'Decomposition reaction' },
+      { id: 'C', text: 'Displacement reaction' },
+      { id: 'D', text: 'Neutralisation reaction' },
+    ],
+    'B',
+    'A single compound breaks down into two or more products, so it is a decomposition reaction.',
+  )
+  await practiceQuestion(
+    'TOPIC', tEffects.id,
+    'The rusting of iron is an example of:',
+    [
+      { id: 'A', text: 'Reduction' },
+      { id: 'B', text: 'Corrosion (oxidation)' },
+      { id: 'C', text: 'Rancidity' },
+      { id: 'D', text: 'Decomposition' },
+    ],
+    'B',
+    'Iron reacts with oxygen and moisture and is oxidised — this corrosion is called rusting.',
+  )
 
   // ── Social Science — demonstrates the optional Book level ──
   const social = await subject('SOCIAL_SCIENCE', 'Social Science', 3)

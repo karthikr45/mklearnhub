@@ -854,7 +854,7 @@ model Topic {
 model AssessmentQuestion {
   id             String                 @id @default(cuid())
   organizationId String?
-  subjectId      String
+  subjectId      String?
   chapterId      String?
   topicId        String?
   examTrack      ExamTrackType?
@@ -869,17 +869,36 @@ model AssessmentQuestion {
   createdById    String?
   createdAt      DateTime               @default(now())
 
-  organization Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  subject      Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  chapter      SyllabusChapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
-  topic        Topic?            @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  items        AssessmentItem[]
-  responses    AttemptResponse[]
+  organization     Organization?               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subject          Subject?                    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapter          SyllabusChapter?            @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  topic            Topic?                      @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  items            AssessmentItem[]
+  responses        AttemptResponse[]
+  curriculumLinks  QuestionCurriculumMapping[]
 
   @@index([subjectId])
   @@index([topicId])
   @@index([examTrack, difficulty])
   @@map("assessment_questions")
+}
+
+// Links a question-bank question to a node in the new curriculum tree
+// (polymorphic — same pattern as CurriculumContentMapping). A question can be
+// attached to a subject, chapter or topic; student practice for a node pulls
+// questions mapped to it and its descendants.
+model QuestionCurriculumMapping {
+  id         String             @id @default(cuid())
+  questionId String
+  nodeType   CurriculumNodeType
+  nodeId     String
+  createdAt  DateTime           @default(now())
+
+  question AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, nodeType, nodeId])
+  @@index([nodeType, nodeId])
+  @@map("question_curriculum_mappings")
 }
 
 // A fixed assessment: chapter test, full mock, or previous-year paper.

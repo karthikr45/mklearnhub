@@ -51,6 +51,27 @@ export class StartPracticeDto {
   limit?: number
 }
 
+const CURRICULUM_NODE_TYPES = [
+  'SUBJECT', 'UNIT', 'BOOK', 'CHAPTER', 'TOPIC', 'SUBTOPIC', 'OBJECTIVE',
+]
+
+export class StartCurriculumPracticeDto {
+  @ApiProperty({ enum: CURRICULUM_NODE_TYPES })
+  @IsIn(CURRICULUM_NODE_TYPES)
+  nodeType!: string
+
+  @ApiProperty()
+  @IsString()
+  nodeId!: string
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 50, default: 10 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number
+}
+
 export class AttemptAnswerDto {
   @ApiProperty()
   @IsString()
