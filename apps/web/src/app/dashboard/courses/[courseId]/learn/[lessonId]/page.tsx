@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { LessonAttachments } from '@/components/courses/LessonAttachments'
 import { VideoPlayer } from '@/components/courses/VideoPlayer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
@@ -297,6 +298,8 @@ export default function LessonPlayerPage() {
               </div>
             ) : null}
           </div>
+
+          <LessonAttachments lessonId={lessonId} canEdit={canEdit} />
 
           <button
             onClick={() => markComplete.mutate()}

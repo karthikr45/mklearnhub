@@ -409,13 +409,36 @@ model Lesson {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  chapter     Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapter     Chapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   progress    LessonProgress[]
   quiz        Quiz?
   lessonScorm LessonScorm?
+  attachments LessonAttachment[]
 
   @@index([chapterId])
   @@map("lessons")
+}
+
+// A downloadable resource attached to a lesson — PDFs, slides, worksheets,
+// spreadsheets, images, audio, zips, any document type. Stored in the
+// configured object storage (R2/S3/…) via a presigned direct upload; the row
+// holds only the storage key + metadata, never the bytes.
+model LessonAttachment {
+  id          String   @id @default(cuid())
+  lessonId    String
+  title       String
+  fileName    String
+  storageKey  String
+  contentType String
+  fileSize    Int      @default(0)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@map("lesson_attachments")
 }
 
 model Enrollment {

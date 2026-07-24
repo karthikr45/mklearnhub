@@ -10,6 +10,7 @@ import { AdminModule } from './modules/admin/admin.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
 import { ApiGatewayModule } from './modules/api-gateway/api-gateway.module'
 import { AssessmentsModule } from './modules/assessments/assessments.module'
+import { AttachmentsModule } from './modules/attachments/attachments.module'
 import { AuditInterceptor } from './modules/audit/audit.interceptor'
 import { AuditModule } from './modules/audit/audit.module'
 import { AuthModule } from './modules/auth/auth.module'
@@ -66,6 +67,7 @@ import { PrismaModule } from './prisma/prisma.module'
     AnalyticsModule,
     StorageModule,
     VideoModule,
+    AttachmentsModule,
     NotificationsModule,
     PushModule,
     RoomsModule,
