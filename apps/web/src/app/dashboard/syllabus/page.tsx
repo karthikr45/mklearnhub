@@ -11,8 +11,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
+import { ContentViewer } from '@/components/content/ContentViewer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
 
@@ -43,24 +43,15 @@ const SECTION_LABEL: Record<string, string> = {
   OFFICIAL: 'Official resources',
 }
 
-function openContent(assetId: string) {
-  api
-    .get<{ deliveryUrl: string | null; body: unknown; title: string; contentType: string }>(
-      `/curriculum/content/${assetId}`,
-    )
-    .then(({ data }) => {
-      if (data.deliveryUrl) {
-        window.open(data.deliveryUrl, '_blank', 'noopener')
-      } else if (data.body) {
-        toast.info(data.title)
-      } else {
-        toast.error('This content has no file yet.')
-      }
-    })
-    .catch(() => toast.error('Could not open this content'))
-}
-
-function TopicContent({ nodeType, nodeId }: { nodeType: string; nodeId: string }) {
+function TopicContent({
+  nodeType,
+  nodeId,
+  onOpen,
+}: {
+  nodeType: string
+  nodeId: string
+  onOpen: (assetId: string) => void
+}) {
   const { data } = useQuery({
     queryKey: ['learner-node-content', nodeType, nodeId],
     queryFn: async () =>
@@ -84,7 +75,7 @@ function TopicContent({ nodeType, nodeId }: { nodeType: string; nodeId: string }
             {items.map((m) => (
               <button
                 key={m.mappingId}
-                onClick={() => openContent(m.asset.id)}
+                onClick={() => onOpen(m.asset.id)}
                 className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs hover:bg-accent"
               >
                 {m.asset.contentType === 'VIDEO' ? (
@@ -109,6 +100,7 @@ export default function SyllabusPage() {
   })
   const [openSubject, setOpenSubject] = useState<string | null>(null)
   const [openChapter, setOpenChapter] = useState<string | null>(null)
+  const [viewAsset, setViewAsset] = useState<string | null>(null)
 
   return (
     <div>
@@ -191,12 +183,12 @@ export default function SyllabusPage() {
                               </button>
                               {cOpen && (
                                 <div className="ml-4 space-y-3 border-l pl-3 pt-1">
-                                  <TopicContent nodeType="CHAPTER" nodeId={ch.id} />
+                                  <TopicContent nodeType="CHAPTER" nodeId={ch.id} onOpen={setViewAsset} />
                                   {ch.topics.map((t) => (
                                     <div key={t.id}>
                                       <p className="text-sm font-medium">{t.title}</p>
                                       <div className="mt-1">
-                                        <TopicContent nodeType="TOPIC" nodeId={t.id} />
+                                        <TopicContent nodeType="TOPIC" nodeId={t.id} onOpen={setViewAsset} />
                                       </div>
                                     </div>
                                   ))}
@@ -213,6 +205,10 @@ export default function SyllabusPage() {
             </div>
           )}
         </div>
+      )}
+
+      {viewAsset && (
+        <ContentViewer assetId={viewAsset} onClose={() => setViewAsset(null)} />
       )}
     </div>
   )
