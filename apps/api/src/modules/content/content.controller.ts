@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -20,6 +22,7 @@ import {
   CreateContentDto,
   CreateMappingDto,
   RequestUploadDto,
+  UpdateContentDto,
 } from './dto/content.dto'
 
 // Content authoring is platform-level; managed by admins. (Content-specific
@@ -73,6 +76,20 @@ export class ContentController {
   @Get(':id')
   get(@Param('id') id: string) {
     return this.content.get(id)
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateContentDto,
+  ) {
+    return this.content.update(user.sub, id, dto)
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.content.remove(user.sub, id)
   }
 
   @Post(':id/mappings')

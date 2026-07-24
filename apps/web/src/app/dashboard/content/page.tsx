@@ -103,6 +103,39 @@ export default function ContentStudioPage() {
     }
   }
 
+  const refreshAssets = () => qc.invalidateQueries({ queryKey: ['content-assets'] })
+  const workflow = async (id: string, action: 'review' | 'approve' | 'publish' | 'archive') => {
+    try {
+      await api.post(`/content/${id}/${action}`)
+      refreshAssets()
+      toast.success(action === 'archive' ? 'Unpublished' : `Moved to ${action}`)
+    } catch (err) {
+      const msg = err instanceof AxiosError ? (err.response?.data as { message?: string })?.message : undefined
+      toast.error(msg ?? 'Action failed')
+    }
+  }
+  const renameAsset = async (id: string, current: string) => {
+    const title = window.prompt('Rename content', current)?.trim()
+    if (!title || title === current) return
+    try {
+      await api.patch(`/content/${id}`, { title })
+      refreshAssets()
+      toast.success('Renamed')
+    } catch {
+      toast.error('Could not rename')
+    }
+  }
+  const deleteAsset = async (id: string, title: string) => {
+    if (!window.confirm(`Delete "${title}"? This also removes it from any curriculum mapping and storage.`)) return
+    try {
+      await api.delete(`/content/${id}`)
+      refreshAssets()
+      toast.success('Deleted')
+    } catch {
+      toast.error('Could not delete')
+    }
+  }
+
   const isThirdParty = !OWNED.includes(sourceType)
   const isExternalOnly = sourceType === 'OFFICIAL_EXTERNAL'
 
@@ -301,23 +334,34 @@ export default function ContentStudioPage() {
                         {a.storageProvider ?? 'no file'}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                         a.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700'
+                        : a.status === 'APPROVED' ? 'bg-blue-100 text-blue-700'
                         : a.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-700'
                         : 'bg-secondary text-secondary-foreground'
                       }`}>
                         {a.status}
                       </span>
-                      <button
-                        onClick={() => setMapFor(mapFor === a.id ? null : a.id)}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
+                      {/* workflow: review → approve → publish → unpublish */}
+                      {a.status === 'DRAFT' && (
+                        <button onClick={() => workflow(a.id, 'review')} className="text-xs text-primary hover:underline">Send to review</button>
+                      )}
+                      {a.status === 'UNDER_REVIEW' && (
+                        <button onClick={() => workflow(a.id, 'approve')} className="text-xs text-primary hover:underline">Approve</button>
+                      )}
+                      {a.status === 'APPROVED' && (
+                        <button onClick={() => workflow(a.id, 'publish')} className="text-xs font-medium text-emerald-600 hover:underline">Publish</button>
+                      )}
+                      {a.status === 'PUBLISHED' && (
+                        <button onClick={() => workflow(a.id, 'archive')} className="text-xs text-muted-foreground hover:underline">Unpublish</button>
+                      )}
+                      <button onClick={() => setMapFor(mapFor === a.id ? null : a.id)} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
                         <Link2 className="h-3.5 w-3.5" /> Map
                       </button>
-                      <button onClick={() => view(a.id)} className="text-xs text-primary hover:underline">
-                        View
-                      </button>
+                      <button onClick={() => view(a.id)} className="text-xs text-primary hover:underline">View</button>
+                      <button onClick={() => renameAsset(a.id, a.title)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">Rename</button>
+                      <button onClick={() => deleteAsset(a.id, a.title)} className="text-xs text-muted-foreground hover:text-destructive hover:underline">Delete</button>
                     </div>
                   </div>
 

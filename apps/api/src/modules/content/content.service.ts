@@ -226,6 +226,57 @@ export class ContentService {
     return mapping
   }
 
+  async update(
+    userId: string,
+    id: string,
+    dto: Partial<{
+      title: string
+      description: string
+      copyrightOwner: string
+      licenseType: string
+      sourceName: string
+      sourceUrl: string
+      licenseUrl: string
+      commercialUseAllowed: boolean
+      selfHostingAllowed: boolean
+      attributionRequired: boolean
+      attributionText: string
+      licenseVerified: boolean
+    }>,
+  ) {
+    const asset = await this.prisma.contentAsset.findUnique({ where: { id } })
+    if (!asset) throw new NotFoundException('Asset not found')
+    const data: Prisma.ContentAssetUpdateInput = {
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.copyrightOwner !== undefined ? { copyrightOwner: dto.copyrightOwner } : {}),
+      ...(dto.licenseType !== undefined ? { licenseType: dto.licenseType as never } : {}),
+      ...(dto.sourceName !== undefined ? { sourceName: dto.sourceName } : {}),
+      ...(dto.sourceUrl !== undefined ? { sourceUrl: dto.sourceUrl } : {}),
+      ...(dto.licenseUrl !== undefined ? { licenseUrl: dto.licenseUrl } : {}),
+      ...(dto.commercialUseAllowed !== undefined ? { commercialUseAllowed: dto.commercialUseAllowed } : {}),
+      ...(dto.selfHostingAllowed !== undefined ? { selfHostingAllowed: dto.selfHostingAllowed } : {}),
+      ...(dto.attributionRequired !== undefined ? { attributionRequired: dto.attributionRequired } : {}),
+      ...(dto.attributionText !== undefined ? { attributionText: dto.attributionText } : {}),
+      ...(dto.licenseVerified !== undefined ? { licenseVerified: dto.licenseVerified } : {}),
+    }
+    const updated = await this.prisma.contentAsset.update({ where: { id }, data })
+    await this.audit.log({ userId, action: 'content.edited', resource: 'ContentAsset', resourceId: id })
+    return this.serialize(updated)
+  }
+
+  async remove(userId: string, id: string) {
+    const asset = await this.prisma.contentAsset.findUnique({ where: { id } })
+    if (!asset) throw new NotFoundException('Asset not found')
+    // Best-effort delete of the stored object; the DB row + mappings go via cascade.
+    if (asset.storageKey) {
+      await this.storage.deleteFile(asset.storageKey).catch(() => undefined)
+    }
+    await this.prisma.contentAsset.delete({ where: { id } })
+    await this.audit.log({ userId, action: 'content.deleted', resource: 'ContentAsset', resourceId: id })
+    return { deleted: true, id }
+  }
+
   /** Workflow transitions with the publish guard: only cleared assets publish. */
   async transition(
     userId: string,

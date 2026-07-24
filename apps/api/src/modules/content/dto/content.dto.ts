@@ -71,6 +71,21 @@ export class CreateContentDto extends LicenseFieldsDto {
   @ApiPropertyOptional() @IsOptional() @IsObject() body?: Record<string, unknown>
 }
 
+export class UpdateContentDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(300) title?: string
+  @ApiPropertyOptional() @IsOptional() @IsString() description?: string
+  @ApiPropertyOptional() @IsOptional() @IsString() copyrightOwner?: string
+  @ApiPropertyOptional({ enum: LICENSE_TYPES }) @IsOptional() @IsIn(LICENSE_TYPES) licenseType?: string
+  @ApiPropertyOptional() @IsOptional() @IsString() sourceName?: string
+  @ApiPropertyOptional() @IsOptional() @IsString() sourceUrl?: string
+  @ApiPropertyOptional() @IsOptional() @IsString() licenseUrl?: string
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() commercialUseAllowed?: boolean
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() selfHostingAllowed?: boolean
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() attributionRequired?: boolean
+  @ApiPropertyOptional() @IsOptional() @IsString() attributionText?: string
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() licenseVerified?: boolean
+}
+
 export class CreateMappingDto {
   @ApiProperty({ enum: NODE_TYPES }) @IsIn(NODE_TYPES) nodeType!: string
   @ApiProperty() @IsString() nodeId!: string

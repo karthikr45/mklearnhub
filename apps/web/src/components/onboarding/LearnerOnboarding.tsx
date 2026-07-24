@@ -10,6 +10,7 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -83,9 +84,29 @@ export function LearnerOnboarding() {
   const [interests, setInterests] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
+  // Board options come from the curriculum DB (boards that actually have a
+  // syllabus loaded); fall back to the static list before any is loaded.
+  const { data: dbBoards } = useQuery({
+    queryKey: ['onboarding-boards'],
+    queryFn: async () =>
+      (await api.get<{ code: string; name: string }[]>('/curriculum/boards')).data,
+  })
+  const boardOptions =
+    dbBoards && dbBoards.length > 0
+      ? dbBoards.map((b) => ({ value: b.code, label: b.name }))
+      : track === 'INTERMEDIATE'
+        ? INTER_BOARDS
+        : SCHOOL_BOARDS
+
   const pickTrack = (t: Track) => {
     setTrack(t)
-    setBoard(t === 'INTERMEDIATE' ? INTER_BOARDS[0]!.value : SCHOOL_BOARDS[0]!.value)
+    const opts =
+      dbBoards && dbBoards.length > 0
+        ? dbBoards.map((b) => ({ value: b.code }))
+        : t === 'INTERMEDIATE'
+          ? INTER_BOARDS
+          : SCHOOL_BOARDS
+    setBoard(opts[0]?.value ?? '')
     setClassLevel('')
     setStream('')
     setStep('details')
@@ -185,7 +206,7 @@ export function LearnerOnboarding() {
                       onChange={(e) => setBoard(e.target.value)}
                       className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     >
-                      {(track === 'INTERMEDIATE' ? INTER_BOARDS : SCHOOL_BOARDS).map((b) => (
+                      {boardOptions.map((b) => (
                         <option key={b.value} value={b.value}>{b.label}</option>
                       ))}
                     </select>
