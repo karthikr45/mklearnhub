@@ -2164,6 +2164,7 @@ enum CurriculumStatus {
 }
 
 enum CurriculumNodeType {
+  GRADE
   SUBJECT
   UNIT
   BOOK

@@ -5,6 +5,7 @@ import { BookOpen, ChevronRight, Download, FileUp, GraduationCap, Layers, Pencil
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { OfficialResourcesPanel } from '@/components/curriculum/OfficialResourcesPanel'
 import { QuestionManager } from '@/components/curriculum/QuestionManager'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { api } from '@/lib/api'
@@ -269,6 +270,10 @@ export default function CurriculumPage() {
       />
 
       <ImportPanel />
+
+      <div className="mt-4">
+        <OfficialResourcesPanel />
+      </div>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

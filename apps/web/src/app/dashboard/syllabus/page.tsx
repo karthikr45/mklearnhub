@@ -27,7 +27,7 @@ interface ForMe {
   reason?: string
   board?: { code: string; name: string } | string
   class?: string | null
-  grade?: { name: string }
+  grade?: { id: string; name: string }
   year?: { label: string }
   subjects?: Subject[]
 }
@@ -87,10 +87,12 @@ function TopicContent({
   nodeType,
   nodeId,
   onOpen,
+  hideWhenEmpty,
 }: {
   nodeType: string
   nodeId: string
   onOpen: (assetId: string) => void
+  hideWhenEmpty?: boolean
 }) {
   const { data } = useQuery({
     queryKey: ['learner-node-content', nodeType, nodeId],
@@ -98,6 +100,7 @@ function TopicContent({
       (await api.get<MappedContent[]>(`/curriculum/nodes/${nodeType}/${nodeId}/content`)).data,
   })
   if (!data || data.length === 0) {
+    if (hideWhenEmpty) return null
     return <p className="pl-3 text-xs text-muted-foreground">No content yet.</p>
   }
   const bySection = data.reduce<Record<string, MappedContent[]>>((acc, m) => {
@@ -185,6 +188,12 @@ export default function SyllabusPage() {
             {data.year && <span className="rounded-full bg-secondary px-3 py-1">{data.year.label}</span>}
           </div>
 
+          {data.grade?.id && (
+            <div className="mb-4">
+              <TopicContent nodeType="GRADE" nodeId={data.grade.id} onOpen={setViewAsset} hideWhenEmpty />
+            </div>
+          )}
+
           {(data.subjects ?? []).length === 0 ? (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
               No subjects published yet.
@@ -210,6 +219,9 @@ export default function SyllabusPage() {
                     </button>
                     {sOpen && (
                       <ul className="border-t p-2">
+                        <li className="px-1 pb-1">
+                          <TopicContent nodeType="SUBJECT" nodeId={subject.id} onOpen={setViewAsset} hideWhenEmpty />
+                        </li>
                         {subject.chapters.map((ch, i) => {
                           const cOpen = openChapter === ch.id
                           return (

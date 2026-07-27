@@ -7,6 +7,7 @@ import { CurriculumController } from './curriculum.controller'
 import { CurriculumImportService } from './curriculum-import.service'
 import { CurriculumQuestionsService } from './curriculum-questions.service'
 import { CurriculumService } from './curriculum.service'
+import { OfficialResourcesService } from './official-resources.service'
 
 @Module({
   imports: [StorageModule, AuditModule],
@@ -16,6 +17,7 @@ import { CurriculumService } from './curriculum.service'
     CurriculumImportService,
     CurriculumAdminService,
     CurriculumQuestionsService,
+    OfficialResourcesService,
   ],
   exports: [CurriculumService],
 })

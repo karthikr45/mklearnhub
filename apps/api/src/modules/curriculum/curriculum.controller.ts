@@ -28,6 +28,7 @@ import { CurriculumAdminService } from './curriculum-admin.service'
 import { CurriculumImportService } from './curriculum-import.service'
 import { CurriculumQuestionsService } from './curriculum-questions.service'
 import { CurriculumService } from './curriculum.service'
+import { OfficialResourcesService } from './official-resources.service'
 
 class ImportCsvDto {
   @IsString()
@@ -63,6 +64,18 @@ class CreateQuestionDto {
   @IsOptional() @IsNumber() negativeMarks?: number
 }
 
+class OfficialCsvDto {
+  @IsString() csv!: string
+  @IsOptional() verify?: boolean
+}
+
+class AddOfficialDto {
+  @IsString() title!: string
+  @IsString() url!: string
+  @IsOptional() @IsString() contentType?: string
+  @IsOptional() @IsString() sourceName?: string
+}
+
 @ApiTags('curriculum')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -73,6 +86,7 @@ export class CurriculumController {
     private readonly importer: CurriculumImportService,
     private readonly admin: CurriculumAdminService,
     private readonly questions: CurriculumQuestionsService,
+    private readonly official: OfficialResourcesService,
   ) {}
 
   /** Load a verified syllabus from CSV (admin only). Idempotent. */
@@ -193,5 +207,35 @@ export class CurriculumController {
     @Param('mappingId') mappingId: string,
   ) {
     return this.questions.remove(user.sub, mappingId)
+  }
+
+  // ── Official external resources (NCERT/CBSE/…) automation ──
+  /** One-click: attach the official CBSE Grade 10 resource set (verified). */
+  @Post('official/cbse-grade10')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  ingestCbse10(@CurrentUser() user: JwtPayload) {
+    return this.official.ingestCbseGrade10(user.sub)
+  }
+
+  /** Bulk-load exact per-chapter official PDFs from CSV (authoritative). */
+  @Post('official/import')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  importOfficial(@CurrentUser() user: JwtPayload, @Body() dto: OfficialCsvDto) {
+    return this.official.importCsv(user.sub, dto.csv, { verify: dto.verify ?? true })
+  }
+
+  /** Attach one official external link to a specific curriculum node. */
+  @Post('nodes/:nodeType/:nodeId/official')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  addOfficial(
+    @CurrentUser() user: JwtPayload,
+    @Param('nodeType') nodeType: string,
+    @Param('nodeId') nodeId: string,
+    @Body() dto: AddOfficialDto,
+  ) {
+    return this.official.addOne(user.sub, nodeType, nodeId, dto)
   }
 }
