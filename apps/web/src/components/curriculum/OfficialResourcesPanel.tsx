@@ -12,6 +12,7 @@ interface IngestSummary {
   published: number
   drafts: number
   skipped: { title: string; reason: string }[]
+  coverage?: { book: string; published: number }[]
 }
 
 const CSV_TEMPLATE = `board,subject,chapter,title,url,type,source
@@ -37,12 +38,13 @@ export function OfficialResourcesPanel() {
   }
 
   const oneClick = useMutation({
+    // Verifies every NCERT chapter URL server-side — can take ~15–40s.
     mutationFn: async () =>
       (await api.post<IngestSummary>('/curriculum/official/cbse-grade10')).data,
     onSuccess: (s) => {
       setLastSummary(s)
       invalidate()
-      toast.success(`Attached ${s.published} official links (${s.drafts} pending verification)`)
+      toast.success(`${s.published} official links live (${s.drafts} unreachable, hidden)`)
     },
     onError: () => toast.error('Could not attach official resources'),
   })
@@ -66,9 +68,11 @@ export function OfficialResourcesPanel() {
         <h3 className="font-semibold">Official resources (NCERT / CBSE)</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Auto-attach copyright-safe <strong>official</strong> resources to the curriculum.
-        These are linked, never re-hosted — students click through to the official
-        NCERT/CBSE source. Unreachable links are held as drafts and never shown to students.
+        Auto-attach copyright-safe <strong>official</strong> resources to the curriculum —
+        the NCERT/CBSE/ePathshala/DIKSHA portals <em>and every NCERT Class 10 chapter PDF</em>.
+        These are linked, never re-hosted — students click through to the official source.
+        Each chapter URL is verified on the server; unreachable ones are held as drafts and
+        never shown to students.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -82,7 +86,9 @@ export function OfficialResourcesPanel() {
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          Auto-add official CBSE Grade 10 links
+          {oneClick.isPending
+            ? 'Verifying NCERT chapters…'
+            : 'Auto-add official CBSE Grade 10 (portals + all chapter PDFs)'}
         </button>
       </div>
 
@@ -127,6 +133,23 @@ export function OfficialResourcesPanel() {
             {lastSummary.created} created · {lastSummary.published} live ·{' '}
             {lastSummary.drafts} pending (unreachable) · {lastSummary.skipped.length} skipped
           </p>
+          {lastSummary.coverage && lastSummary.coverage.length > 0 && (
+            <div className="mt-2">
+              <p className="font-medium">NCERT chapter PDFs found per book:</p>
+              <ul className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2">
+                {lastSummary.coverage.map((c) => (
+                  <li
+                    key={c.book}
+                    className={c.published === 0 ? 'text-destructive' : 'text-muted-foreground'}
+                  >
+                    {c.published === 0 ? '⚠ ' : '✓ '}
+                    {c.book}: {c.published}
+                    {c.published === 0 ? ' (none reachable — check book code/network)' : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {lastSummary.skipped.length > 0 && (
             <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
               {lastSummary.skipped.slice(0, 8).map((s, i) => (

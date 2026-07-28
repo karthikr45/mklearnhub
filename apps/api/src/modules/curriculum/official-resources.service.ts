@@ -36,7 +36,38 @@ export interface IngestSummary {
   published: number
   drafts: number
   skipped: { title: string; reason: string }[]
+  /** Per-book resolved-chapter tally (NCERT chapter ingest only). */
+  coverage?: { book: string; published: number }[]
 }
+
+/**
+ * NCERT Class 10 books and their textbook-PDF codes. Chapter PDFs follow
+ * `https://ncert.nic.in/textbook/pdf/<code><NN>.pdf` (NN = 2-digit chapter).
+ * We over-probe up to `maxChapters` and the verifier keeps only URLs that
+ * actually resolve — so an unknown chapter count or a wrong code never yields a
+ * broken link (those stay DRAFT and show up as 0 coverage for that book).
+ */
+const NCERT_CLASS10_BOOKS: {
+  subject: string
+  code: string
+  book: string
+  maxChapters: number
+}[] = [
+  { subject: 'Mathematics', code: 'jemh1', book: 'Mathematics', maxChapters: 16 },
+  { subject: 'Science', code: 'jesc1', book: 'Science', maxChapters: 16 },
+  { subject: 'Social Science', code: 'jess3', book: 'History — India and the Contemporary World II', maxChapters: 8 },
+  { subject: 'Social Science', code: 'jess4', book: 'Geography — Contemporary India II', maxChapters: 10 },
+  { subject: 'Social Science', code: 'jess2', book: 'Political Science — Democratic Politics II', maxChapters: 10 },
+  { subject: 'Social Science', code: 'jess1', book: 'Economics — Understanding Economic Development', maxChapters: 8 },
+  { subject: 'English', code: 'jeff1', book: 'First Flight', maxChapters: 14 },
+  { subject: 'English', code: 'jefp1', book: 'Footprints Without Feet', maxChapters: 12 },
+  { subject: 'Hindi', code: 'jhks1', book: 'Kshitij (क्षितिज)', maxChapters: 20 },
+  { subject: 'Hindi', code: 'jhkr1', book: 'Kritika (कृतिका)', maxChapters: 8 },
+  { subject: 'Hindi', code: 'jhsp1', book: 'Sparsh (स्पर्श)', maxChapters: 20 },
+  { subject: 'Hindi', code: 'jhsn1', book: 'Sanchayan (संचयन)', maxChapters: 8 },
+]
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
 
 interface ResolvedNode {
   nodeType: 'SUBJECT' | 'GRADE' | 'CHAPTER'
@@ -137,6 +168,21 @@ export class OfficialResourcesService {
     const summary: IngestSummary = { created: 0, published: 0, drafts: 0, skipped: [] }
     const sourceCache = new Map<string, string>()
 
+    // Pre-verify every distinct non-trusted URL in parallel (bounded pool) so a
+    // catalog with 100+ chapter PDFs still resolves in seconds, not minutes.
+    const verdict = new Map<string, boolean>()
+    if (opts.verify) {
+      const urls = [
+        ...new Set(entries.filter((e) => !e.trusted && e.url?.trim()).map((e) => e.url)),
+      ]
+      const CONCURRENCY = 12
+      for (let i = 0; i < urls.length; i += CONCURRENCY) {
+        const batch = urls.slice(i, i + CONCURRENCY)
+        const oks = await Promise.all(batch.map((u) => this.verifyUrl(u)))
+        batch.forEach((u, j) => verdict.set(u, oks[j]!))
+      }
+    }
+
     for (const entry of entries) {
       if (!entry.url?.trim() || !entry.title?.trim()) {
         summary.skipped.push({ title: entry.title || entry.url, reason: 'missing title/url' })
@@ -151,11 +197,8 @@ export class OfficialResourcesService {
         continue
       }
 
-      // Publish trusted portals as-is; verify the rest when asked.
-      let publish = true
-      if (!entry.trusted && opts.verify) {
-        publish = await this.verifyUrl(entry.url)
-      }
+      // Publish trusted portals as-is; use the precomputed verdict otherwise.
+      const publish = entry.trusted || !opts.verify ? true : (verdict.get(entry.url) ?? false)
       const status = publish ? PUB : DRAFT
 
       // find-or-create the ContentSource for this provider
@@ -429,8 +472,58 @@ export class OfficialResourcesService {
     return [...perSubject, ...gradeLevel]
   }
 
-  /** One-click: attach the official CBSE Grade 10 resource set. */
+  /**
+   * Every NCERT Class 10 chapter PDF, generated from the official book-code
+   * pattern and mapped at the SUBJECT level (generic "Chapter N" titles — no
+   * claim about which seeded chapter it is, so there's zero mis-association).
+   * The verifier keeps only URLs that resolve.
+   */
+  private ncertChapterCatalog(): OfficialEntry[] {
+    const entries: OfficialEntry[] = []
+    for (const b of NCERT_CLASS10_BOOKS) {
+      for (let n = 1; n <= b.maxChapters; n++) {
+        entries.push({
+          boardCode: 'CBSE',
+          subject: b.subject,
+          title: `NCERT ${b.book} — Chapter ${n} (official PDF)`,
+          url: `https://ncert.nic.in/textbook/pdf/${b.code}${pad2(n)}.pdf`,
+          contentType: 'PDF',
+          sourceName: 'NCERT',
+          copyrightOwner: 'NCERT',
+          // never trusted-blind — each is verified so non-existent chapters and
+          // wrong codes stay DRAFT instead of 404ing for students.
+        })
+      }
+    }
+    return entries
+  }
+
+  /** Published NCERT chapter-PDF count per book (for the admin coverage report). */
+  private async ncertCoverage(): Promise<{ book: string; published: number }[]> {
+    const out: { book: string; published: number }[] = []
+    for (const b of NCERT_CLASS10_BOOKS) {
+      const published = await this.prisma.contentAsset.count({
+        where: {
+          sourceType: 'OFFICIAL_EXTERNAL',
+          status: PUB,
+          sourceUrl: { contains: `/${b.code}` },
+        },
+      })
+      out.push({ book: b.book, published })
+    }
+    return out
+  }
+
+  /**
+   * One-click: attach the WHOLE official CBSE Grade 10 set — stable portals
+   * (published as-is) plus every NCERT chapter PDF (verified, only reachable
+   * ones go live). Returns a per-book coverage report so a wrong book code is
+   * visible (0 published) rather than silently missing.
+   */
   async ingestCbseGrade10(userId: string, opts: IngestOptions = {}) {
-    return this.ingest(userId, this.cbseGrade10Catalog(), { verify: true, ...opts })
+    const entries = [...this.cbseGrade10Catalog(), ...this.ncertChapterCatalog()]
+    const summary = await this.ingest(userId, entries, { verify: true, ...opts })
+    summary.coverage = await this.ncertCoverage()
+    return summary
   }
 }

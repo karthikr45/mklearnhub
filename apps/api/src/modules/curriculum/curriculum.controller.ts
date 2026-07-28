@@ -69,6 +69,10 @@ class OfficialCsvDto {
   @IsOptional() verify?: boolean
 }
 
+class IngestOfficialDto {
+  @IsOptional() verify?: boolean
+}
+
 class AddOfficialDto {
   @IsString() title!: string
   @IsString() url!: string
@@ -214,8 +218,14 @@ export class CurriculumController {
   @Post('official/cbse-grade10')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN', 'ORG_ADMIN')
-  ingestCbse10(@CurrentUser() user: JwtPayload) {
-    return this.official.ingestCbseGrade10(user.sub)
+  ingestCbse10(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: IngestOfficialDto = {},
+  ) {
+    return this.official.ingestCbseGrade10(
+      user.sub,
+      dto.verify === false ? { verify: false } : {},
+    )
   }
 
   /** Bulk-load exact per-chapter official PDFs from CSV (authoritative). */
