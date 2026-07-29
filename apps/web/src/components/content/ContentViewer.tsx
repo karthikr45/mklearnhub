@@ -130,7 +130,7 @@ export function ContentViewer({
     }
     if (body?.text || body?.html)
       return (
-        <div className="prose prose-sm max-w-none text-sm leading-relaxed">
+        <div className="prose prose-sm max-w-none whitespace-pre-line text-sm leading-relaxed">
           <MathText text={body.text ?? stripTags(body.html ?? '')} />
         </div>
       )
