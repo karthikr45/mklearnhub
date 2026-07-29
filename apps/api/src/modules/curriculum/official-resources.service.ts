@@ -55,10 +55,12 @@ const NCERT_CLASS10_BOOKS: {
 }[] = [
   { subject: 'Mathematics', code: 'jemh1', book: 'Mathematics', maxChapters: 16 },
   { subject: 'Science', code: 'jesc1', book: 'Science', maxChapters: 16 },
+  // NCERT SST codes (confirmed): jess1=Geography, jess2=Economics,
+  // jess3=History, jess4=Civics/Political Science.
+  { subject: 'Social Science', code: 'jess1', book: 'Geography — Contemporary India II', maxChapters: 10 },
+  { subject: 'Social Science', code: 'jess2', book: 'Economics — Understanding Economic Development', maxChapters: 8 },
   { subject: 'Social Science', code: 'jess3', book: 'History — India and the Contemporary World II', maxChapters: 8 },
-  { subject: 'Social Science', code: 'jess4', book: 'Geography — Contemporary India II', maxChapters: 10 },
-  { subject: 'Social Science', code: 'jess2', book: 'Political Science — Democratic Politics II', maxChapters: 10 },
-  { subject: 'Social Science', code: 'jess1', book: 'Economics — Understanding Economic Development', maxChapters: 8 },
+  { subject: 'Social Science', code: 'jess4', book: 'Political Science — Democratic Politics II', maxChapters: 10 },
   { subject: 'English', code: 'jeff1', book: 'First Flight', maxChapters: 14 },
   { subject: 'English', code: 'jefp1', book: 'Footprints Without Feet', maxChapters: 12 },
   { subject: 'Hindi', code: 'jhks1', book: 'Kshitij (क्षितिज)', maxChapters: 20 },
