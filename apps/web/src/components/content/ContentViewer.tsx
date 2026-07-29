@@ -93,7 +93,27 @@ export function ContentViewer({
       if (contentType === 'IMAGE' || contentType === 'DIAGRAM')
         return <img src={deliveryUrl} alt={data.title} className="mx-auto max-h-[70vh] rounded-lg" />
       if (contentType === 'PDF')
-        return <iframe src={deliveryUrl} title={data.title} className="h-[70vh] w-full rounded-lg border" />
+        return (
+          <div>
+            <a
+              href={deliveryUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mk-brand-bg mb-3 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium text-white"
+            >
+              <ExternalLink className="h-4 w-4" /> Open PDF in a new tab
+            </a>
+            <iframe
+              src={deliveryUrl}
+              title={data.title}
+              className="h-[70vh] w-full rounded-lg border"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              If the preview stays blank, use “Open PDF in a new tab” above — some
+              official sources block inline embedding.
+            </p>
+          </div>
+        )
       return (
         <a
           href={deliveryUrl}

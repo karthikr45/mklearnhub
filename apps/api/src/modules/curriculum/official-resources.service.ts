@@ -40,28 +40,74 @@ export interface IngestSummary {
   coverage?: { book: string; published: number }[]
 }
 
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
 /**
- * NCERT Class 10 books and their textbook-PDF codes. Chapter PDFs follow
- * `https://ncert.nic.in/textbook/pdf/<code><NN>.pdf` (NN = 2-digit chapter).
- * We over-probe up to `maxChapters` and the verifier keeps only URLs that
- * actually resolve — so an unknown chapter count or a wrong code never yields a
- * broken link (those stay DRAFT and show up as 0 coverage for that book).
+ * NCERT Class 10 books mapped CHAPTER-WISE. Each `chapters` list is in the exact
+ * NCERT textbook order, so chapter i maps to `<code><i>.pdf` AND to the seeded
+ * curriculum chapter with the SAME title — the PDF lands under the right named
+ * chapter on the student's syllabus (title match, not position, so it's correct
+ * even though e.g. Maths chapters are grouped by unit in the tree).
+ * Titles MUST match the seed exactly (seed-curriculum.ts).
  */
-const NCERT_CLASS10_BOOKS: {
-  subject: string
-  code: string
-  book: string
-  maxChapters: number
-}[] = [
-  { subject: 'Mathematics', code: 'jemh1', book: 'Mathematics', maxChapters: 16 },
-  { subject: 'Science', code: 'jesc1', book: 'Science', maxChapters: 16 },
-  // NCERT SST codes (confirmed): jess1=Geography, jess2=Economics,
-  // jess3=History, jess4=Civics/Political Science.
-  { subject: 'Social Science', code: 'jess1', book: 'Geography — Contemporary India II', maxChapters: 10 },
-  { subject: 'Social Science', code: 'jess2', book: 'Economics — Understanding Economic Development', maxChapters: 8 },
-  { subject: 'Social Science', code: 'jess3', book: 'History — India and the Contemporary World II', maxChapters: 8 },
-  { subject: 'Social Science', code: 'jess4', book: 'Political Science — Democratic Politics II', maxChapters: 10 },
-  { subject: 'English', code: 'jeff1', book: 'First Flight', maxChapters: 14 },
+const NCERT_PER_CHAPTER: { subject: string; code: string; book: string; chapters: string[] }[] = [
+  {
+    subject: 'Science', code: 'jesc1', book: 'Science',
+    chapters: [
+      'Chemical Reactions and Equations', 'Acids, Bases and Salts', 'Metals and Non-metals',
+      'Carbon and its Compounds', 'Life Processes', 'Control and Coordination',
+      'How do Organisms Reproduce?', 'Heredity', 'Light – Reflection and Refraction',
+      'The Human Eye and the Colourful World', 'Electricity',
+      'Magnetic Effects of Electric Current', 'Our Environment',
+    ],
+  },
+  {
+    subject: 'Mathematics', code: 'jemh1', book: 'Mathematics',
+    chapters: [
+      'Real Numbers', 'Polynomials', 'Pair of Linear Equations in Two Variables',
+      'Quadratic Equations', 'Arithmetic Progressions', 'Triangles', 'Coordinate Geometry',
+      'Introduction to Trigonometry', 'Some Applications of Trigonometry', 'Circles',
+      'Areas Related to Circles', 'Surface Areas and Volumes', 'Statistics', 'Probability',
+    ],
+  },
+  {
+    subject: 'Social Science', code: 'jess1', book: 'Geography — Contemporary India II',
+    chapters: [
+      'Resources and Development', 'Forest and Wildlife Resources', 'Water Resources',
+      'Agriculture', 'Minerals and Energy Resources', 'Manufacturing Industries',
+      'Lifelines of National Economy',
+    ],
+  },
+  {
+    subject: 'Social Science', code: 'jess2', book: 'Economics — Understanding Economic Development',
+    chapters: [
+      'Development', 'Sectors of the Indian Economy', 'Money and Credit',
+      'Globalisation and the Indian Economy', 'Consumer Rights',
+    ],
+  },
+  {
+    subject: 'Social Science', code: 'jess3', book: 'History — India and the Contemporary World II',
+    chapters: [
+      'The Rise of Nationalism in Europe', 'Nationalism in India', 'The Making of a Global World',
+      'The Age of Industrialisation', 'Print Culture and the Modern World',
+    ],
+  },
+  {
+    subject: 'Social Science', code: 'jess4', book: 'Political Science — Democratic Politics II',
+    chapters: [
+      'Power-sharing', 'Federalism', 'Gender, Religion and Caste', 'Political Parties',
+      'Outcomes of Democracy',
+    ],
+  },
+]
+
+/**
+ * Books whose NCERT PDF grouping does NOT match the syllabus 1:1 (English pairs
+ * a prose + poem per PDF; Hindi chapter counts vary), so their chapter PDFs are
+ * attached at the SUBJECT level as "Chapter N" instead of per named chapter.
+ */
+const NCERT_SUBJECT_LEVEL: { subject: string; code: string; book: string; maxChapters: number }[] = [
+  { subject: 'English', code: 'jeff1', book: 'First Flight', maxChapters: 12 },
   { subject: 'English', code: 'jefp1', book: 'Footprints Without Feet', maxChapters: 12 },
   { subject: 'Hindi', code: 'jhks1', book: 'Kshitij (क्षितिज)', maxChapters: 20 },
   { subject: 'Hindi', code: 'jhkr1', book: 'Kritika (कृतिका)', maxChapters: 8 },
@@ -69,7 +115,11 @@ const NCERT_CLASS10_BOOKS: {
   { subject: 'Hindi', code: 'jhsn1', book: 'Sanchayan (संचयन)', maxChapters: 8 },
 ]
 
-const pad2 = (n: number) => String(n).padStart(2, '0')
+/** All books (for the per-book coverage report). */
+const ALL_NCERT_BOOKS = [
+  ...NCERT_PER_CHAPTER.map((b) => ({ code: b.code, book: b.book })),
+  ...NCERT_SUBJECT_LEVEL.map((b) => ({ code: b.code, book: b.book })),
+]
 
 interface ResolvedNode {
   nodeType: 'SUBJECT' | 'GRADE' | 'CHAPTER'
@@ -475,14 +525,30 @@ export class OfficialResourcesService {
   }
 
   /**
-   * Every NCERT Class 10 chapter PDF, generated from the official book-code
-   * pattern and mapped at the SUBJECT level (generic "Chapter N" titles — no
-   * claim about which seeded chapter it is, so there's zero mis-association).
-   * The verifier keeps only URLs that resolve.
+   * Every NCERT Class 10 chapter PDF. Science/Maths/Social-Science are mapped
+   * CHAPTER-WISE (each PDF attaches to its named chapter, so it shows under that
+   * chapter on the student's syllabus). English/Hindi are attached at the
+   * SUBJECT level as "Chapter N". Every URL is verified before it goes live.
    */
   private ncertChapterCatalog(): OfficialEntry[] {
     const entries: OfficialEntry[] = []
-    for (const b of NCERT_CLASS10_BOOKS) {
+    // Chapter-wise (title-matched) books
+    for (const b of NCERT_PER_CHAPTER) {
+      b.chapters.forEach((chapterTitle, i) => {
+        entries.push({
+          boardCode: 'CBSE',
+          subject: b.subject,
+          chapter: chapterTitle,
+          title: 'NCERT textbook — read this chapter (official PDF)',
+          url: `https://ncert.nic.in/textbook/pdf/${b.code}${pad2(i + 1)}.pdf`,
+          contentType: 'PDF',
+          sourceName: 'NCERT',
+          copyrightOwner: 'NCERT',
+        })
+      })
+    }
+    // Subject-level books (English/Hindi)
+    for (const b of NCERT_SUBJECT_LEVEL) {
       for (let n = 1; n <= b.maxChapters; n++) {
         entries.push({
           boardCode: 'CBSE',
@@ -492,8 +558,6 @@ export class OfficialResourcesService {
           contentType: 'PDF',
           sourceName: 'NCERT',
           copyrightOwner: 'NCERT',
-          // never trusted-blind — each is verified so non-existent chapters and
-          // wrong codes stay DRAFT instead of 404ing for students.
         })
       }
     }
@@ -503,7 +567,7 @@ export class OfficialResourcesService {
   /** Published NCERT chapter-PDF count per book (for the admin coverage report). */
   private async ncertCoverage(): Promise<{ book: string; published: number }[]> {
     const out: { book: string; published: number }[] = []
-    for (const b of NCERT_CLASS10_BOOKS) {
+    for (const b of ALL_NCERT_BOOKS) {
       const published = await this.prisma.contentAsset.count({
         where: {
           sourceType: 'OFFICIAL_EXTERNAL',
@@ -523,6 +587,19 @@ export class OfficialResourcesService {
    * visible (0 published) rather than silently missing.
    */
   async ingestCbseGrade10(userId: string, opts: IngestOptions = {}) {
+    // Reset the placement of NCERT chapter PDFs first, so a re-run re-maps them
+    // cleanly (e.g. moving from subject-level to chapter-level after this
+    // change) instead of leaving the same PDF attached in two places. Assets are
+    // kept (deduped by URL); only their OFFICIAL mappings are cleared.
+    const pdfAssets = await this.prisma.contentAsset.findMany({
+      where: { sourceType: 'OFFICIAL_EXTERNAL', sourceUrl: { contains: '/textbook/pdf/' } },
+      select: { id: true },
+    })
+    if (pdfAssets.length) {
+      await this.prisma.curriculumContentMapping.deleteMany({
+        where: { section: 'OFFICIAL', assetId: { in: pdfAssets.map((a) => a.id) } },
+      })
+    }
     const entries = [...this.cbseGrade10Catalog(), ...this.ncertChapterCatalog()]
     const summary = await this.ingest(userId, entries, { verify: true, ...opts })
     summary.coverage = await this.ncertCoverage()
