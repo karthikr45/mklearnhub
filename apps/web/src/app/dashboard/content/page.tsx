@@ -78,6 +78,7 @@ export default function ContentStudioPage() {
   const [selfHost, setSelfHost] = useState(false)
   const [commercial, setCommercial] = useState(false)
   const [verified, setVerified] = useState(false)
+  const [officialAck, setOfficialAck] = useState(false)
   const [sourceName, setSourceName] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
   const [busy, setBusy] = useState(false)
@@ -193,15 +194,22 @@ export default function ContentStudioPage() {
         filename: file.name,
         mimeType: file.type || 'application/octet-stream',
         sourceType,
-        ...(isThirdParty
+        ...(isExternalOnly
           ? {
-              selfHostingAllowed: selfHost,
-              commercialUseAllowed: commercial,
-              licenseVerified: verified,
-              ...(sourceName ? { sourceName } : {}),
-              ...(licenseUrl ? { licenseUrl } : {}),
+              officialHostingAcknowledged: officialAck,
+              attributionRequired: true,
+              sourceName: sourceName || 'NCERT',
+              attributionText: `Source: ${sourceName || 'NCERT'}`,
             }
-          : {}),
+          : isThirdParty
+            ? {
+                selfHostingAllowed: selfHost,
+                commercialUseAllowed: commercial,
+                licenseVerified: verified,
+                ...(sourceName ? { sourceName } : {}),
+                ...(licenseUrl ? { licenseUrl } : {}),
+              }
+            : {}),
       })
 
       // 2) PUT the file straight to R2 (no auth header — the URL is signed)
@@ -355,10 +363,30 @@ export default function ContentStudioPage() {
             </div>
 
             {isExternalOnly ? (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                Official external resources are reference-only and cannot be uploaded
-                to storage. Use “Add external reference” instead (coming next).
+              <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                <p className="flex items-center gap-1.5 font-medium">
+                  <ShieldAlert className="h-3.5 w-3.5" /> Hosting an official resource
+                </p>
+                <p>
+                  Official material (e.g. NCERT) may be hosted only <strong>unchanged</strong>,
+                  <strong> attributed</strong>, and for <strong>free</strong>. A “Source” credit is
+                  shown to students automatically.
+                </p>
+                <input
+                  value={sourceName}
+                  onChange={(e) => setSourceName(e.target.value)}
+                  placeholder="Source (e.g. NCERT)"
+                  className="w-full rounded-md border px-3 py-1.5 text-sm"
+                />
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={officialAck}
+                    onChange={(e) => setOfficialAck(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  I confirm this is hosted unchanged, credited to the source above, and free.
+                </label>
               </div>
             ) : isThirdParty ? (
               <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
@@ -396,13 +424,13 @@ export default function ContentStudioPage() {
             <input
               type="file"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              disabled={isExternalOnly}
+              disabled={isExternalOnly && !officialAck}
               className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground disabled:opacity-50"
             />
 
             <button
               onClick={upload}
-              disabled={busy || isExternalOnly || !title.trim() || !file}
+              disabled={busy || (isExternalOnly && !officialAck) || !title.trim() || !file}
               className="mk-brand-bg inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}

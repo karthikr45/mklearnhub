@@ -71,10 +71,21 @@ export class ContentService {
       selfHostingAllowed: dto.selfHostingAllowed ?? false,
       commercialUseAllowed: dto.commercialUseAllowed ?? false,
       licenseVerified: dto.licenseVerified ?? false,
+      officialHostingAcknowledged: dto.officialHostingAcknowledged ?? false,
     })
     if (!gate.allowed) {
       throw new ForbiddenException(
         `Upload blocked: ${gate.reason} Store it as an official external reference instead.`,
+      )
+    }
+    // Hosting an official resource requires a visible attribution (source name).
+    if (
+      dto.sourceType === 'OFFICIAL_EXTERNAL' &&
+      dto.officialHostingAcknowledged === true &&
+      !dto.sourceName?.trim()
+    ) {
+      throw new BadRequestException(
+        'Provide a source name (e.g. "NCERT") — official resources must stay attributed.',
       )
     }
     if (!this.storage.isConfigured()) {

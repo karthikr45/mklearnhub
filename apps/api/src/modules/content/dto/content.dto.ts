@@ -47,6 +47,10 @@ class LicenseFieldsDto {
   @ApiPropertyOptional() @IsOptional() @IsBoolean() attributionRequired?: boolean
   @ApiPropertyOptional() @IsOptional() @IsString() attributionText?: string
   @ApiPropertyOptional() @IsOptional() @IsBoolean() licenseVerified?: boolean
+
+  /** Super-admin opt-in to host an OFFICIAL_EXTERNAL file (e.g. an NCERT book)
+   *  unchanged, attributed and free. Required to store official files. */
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() officialHostingAcknowledged?: boolean
 }
 
 export class RequestUploadDto extends LicenseFieldsDto {

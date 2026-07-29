@@ -21,6 +21,12 @@ export interface LicenseInput {
   selfHostingAllowed?: boolean | null
   commercialUseAllowed?: boolean | null
   licenseVerified?: boolean | null
+  /**
+   * Explicit per-file opt-in to host an OFFICIAL_EXTERNAL resource (e.g. an
+   * NCERT textbook) unchanged, with attribution, for free/educational use.
+   * A super-admin decision — the default is still reference-only.
+   */
+  officialHostingAcknowledged?: boolean | null
 }
 
 export interface GateResult {
@@ -49,10 +55,13 @@ export function canSelfHost(input: LicenseInput): GateResult {
   if (OWNED_SOURCES.has(input.sourceType)) return { allowed: true }
 
   if (input.sourceType === 'OFFICIAL_EXTERNAL') {
+    // Default: reference-only. A super-admin may explicitly opt in to hosting
+    // an official resource unchanged, attributed and free (e.g. NCERT books).
+    if (input.officialHostingAcknowledged === true) return { allowed: true }
     return {
       allowed: false,
       reason:
-        'Official external resources are reference-only and must not be copied into storage.',
+        'Official resources are reference-only unless you confirm hosting them unchanged, attributed and free.',
     }
   }
 

@@ -9,8 +9,14 @@ describe('license gate — canSelfHost', () => {
     expect(canSelfHost({ sourceType: 'INTERNAL_GENERATED' }).allowed).toBe(true)
   })
 
-  it('NEVER self-hosts official external resources (reference only)', () => {
+  it('keeps official external resources reference-only by default', () => {
     expect(canSelfHost({ sourceType: 'OFFICIAL_EXTERNAL' }).allowed).toBe(false)
+  })
+
+  it('allows hosting an official resource only with explicit acknowledgment', () => {
+    expect(
+      canSelfHost({ sourceType: 'OFFICIAL_EXTERNAL', officialHostingAcknowledged: true }).allowed,
+    ).toBe(true)
   })
 
   // The critical rule from the spec (Section 34):
