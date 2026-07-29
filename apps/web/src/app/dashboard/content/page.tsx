@@ -79,6 +79,7 @@ export default function ContentStudioPage() {
   const [commercial, setCommercial] = useState(false)
   const [verified, setVerified] = useState(false)
   const [officialAck, setOfficialAck] = useState(false)
+  const [officialFiles, setOfficialFiles] = useState<File[]>([])
   const [sourceName, setSourceName] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
   const [busy, setBusy] = useState(false)
@@ -179,20 +180,39 @@ export default function ContentStudioPage() {
   const isThirdParty = !OWNED.includes(sourceType)
   const isExternalOnly = sourceType === 'OFFICIAL_EXTERNAL'
 
-  const upload = async () => {
-    if (!title.trim() || !file) return
-    setBusy(true)
-    try {
-      // 1) License gate + presigned R2 URL
-      const { data: presign } = await api.post<{
-        assetId: string
-        uploadUrl: string
-        storageKey: string
-      }>('/content/upload-url', {
-        title: title.trim(),
+  /** Upload one file to R2. For official files the title + chapter come from the
+   *  filename automatically; for other sources the typed title is used. */
+  const uploadOne = async (f: File, typedTitle: string): Promise<string> => {
+    // For official NCERT files, recognise the chapter from the filename first,
+    // so the title and mapping are automatic (no typing needed).
+    let rec: {
+      recognized: boolean
+      subject?: string
+      chapterTitle?: string | null
+      suggestedTitle?: string
+      nodeType?: string | null
+      nodeId?: string | null
+    } | null = null
+    if (isExternalOnly) {
+      try {
+        rec = (
+          await api.get(`/curriculum/official/ncert-file?name=${encodeURIComponent(f.name)}`)
+        ).data
+      } catch {
+        rec = null
+      }
+    }
+    const finalTitle = isExternalOnly
+      ? rec?.suggestedTitle || f.name.replace(/\.pdf$/i, '')
+      : typedTitle.trim()
+
+    const { data: presign } = await api.post<{ assetId: string; uploadUrl: string }>(
+      '/content/upload-url',
+      {
+        title: finalTitle,
         contentType,
-        filename: file.name,
-        mimeType: file.type || 'application/octet-stream',
+        filename: f.name,
+        mimeType: f.type || 'application/octet-stream',
         sourceType,
         ...(isExternalOnly
           ? {
@@ -210,64 +230,68 @@ export default function ContentStudioPage() {
                 ...(licenseUrl ? { licenseUrl } : {}),
               }
             : {}),
+      },
+    )
+
+    const put = await fetch(presign.uploadUrl, {
+      method: 'PUT',
+      body: f,
+      headers: { 'Content-Type': f.type || 'application/octet-stream' },
+    })
+    if (!put.ok) {
+      throw new Error(
+        `Storage rejected the upload (HTTP ${put.status}). If this is a CORS error, add a PUT CORS rule to the R2 bucket.`,
+      )
+    }
+    await api.post(`/content/${presign.assetId}/complete`, { fileSize: f.size })
+
+    // Official file: auto-map to the recognised chapter + publish.
+    if (isExternalOnly && rec?.recognized && rec.nodeId && rec.nodeType) {
+      await api.post(`/content/${presign.assetId}/mappings`, {
+        nodeType: rec.nodeType,
+        nodeId: rec.nodeId,
+        section: 'OFFICIAL',
+        role: 'OFFICIAL_TEXTBOOK',
       })
+      await api.post(`/content/${presign.assetId}/publish`).catch(() => {})
+      return rec.chapterTitle
+        ? `${f.name} → ${rec.subject}: ${rec.chapterTitle}`
+        : `${f.name} → ${rec.subject}`
+    }
+    if (isExternalOnly) return `${f.name} → uploaded (map it manually — filename not recognised)`
+    return `${finalTitle} → uploaded`
+  }
 
-      // 2) PUT the file straight to R2 (no auth header — the URL is signed)
-      const put = await fetch(presign.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      })
-      if (!put.ok) {
-        throw new Error(
-          `Storage rejected the upload (HTTP ${put.status}). If this is CORS, add a CORS rule to the R2 bucket.`,
-        )
-      }
-
-      // 3) Confirm the object landed
-      await api.post(`/content/${presign.assetId}/complete`, { fileSize: file.size })
-
-      // 4) For official NCERT files, auto-map to the recognised chapter + publish
-      let mapped = ''
-      if (isExternalOnly) {
+  const upload = async () => {
+    const list = isExternalOnly ? officialFiles : file ? [file] : []
+    if (list.length === 0) return
+    if (!isExternalOnly && !title.trim()) return
+    setBusy(true)
+    let ok = 0
+    let fail = 0
+    try {
+      for (const f of list) {
         try {
-          const { data: rec } = await api.get<{
-            recognized: boolean
-            subject?: string
-            chapterTitle?: string | null
-            nodeType?: string | null
-            nodeId?: string | null
-          }>(`/curriculum/official/ncert-file?name=${encodeURIComponent(file.name)}`)
-          if (rec.recognized && rec.nodeId && rec.nodeType) {
-            await api.post(`/content/${presign.assetId}/mappings`, {
-              nodeType: rec.nodeType,
-              nodeId: rec.nodeId,
-              section: 'OFFICIAL',
-              role: 'OFFICIAL_TEXTBOOK',
-            })
-            await api.post(`/content/${presign.assetId}/publish`).catch(() => {})
-            mapped = rec.chapterTitle
-              ? ` → mapped to ${rec.subject}: ${rec.chapterTitle}`
-              : ` → ${rec.subject}`
-          }
-        } catch {
-          /* recognition is best-effort; manual mapping still available */
+          const msg = await uploadOne(f, title)
+          ok++
+          toast.success(msg)
+        } catch (err) {
+          fail++
+          const msg =
+            err instanceof AxiosError
+              ? (err.response?.data as { message?: string })?.message ?? 'Upload failed'
+              : err instanceof Error
+                ? err.message
+                : 'Upload failed'
+          toast.error(`${f.name}: ${msg}`)
         }
       }
-
-      toast.success(`Uploaded to storage ✓${mapped}`)
+      if (list.length > 1) toast.success(`Done — ${ok} uploaded, ${fail} failed`)
       setTitle('')
       setFile(null)
+      setOfficialFiles([])
       void qc.invalidateQueries({ queryKey: ['content-assets'] })
       void qc.invalidateQueries({ queryKey: ['content-overview'] })
-    } catch (err) {
-      const msg =
-        err instanceof AxiosError
-          ? (err.response?.data as { message?: string })?.message ?? 'Upload failed'
-          : err instanceof Error
-            ? err.message
-            : 'Upload failed'
-      toast.error(msg)
     } finally {
       setBusy(false)
     }
@@ -358,12 +382,14 @@ export default function ContentStudioPage() {
         <div className="card-elevated p-5">
           <h2 className="mb-4 text-sm font-semibold">Upload an asset</h2>
           <div className="space-y-3">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title (e.g. Balancing Equations — Worksheet)"
-              className="w-full rounded-md border px-3 py-2 text-sm"
-            />
+            {!isExternalOnly && (
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title (e.g. Balancing Equations — Worksheet)"
+                className="w-full rounded-md border px-3 py-2 text-sm"
+              />
+            )}
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="text-xs font-medium text-muted-foreground">Type</span>
@@ -450,25 +476,54 @@ export default function ContentStudioPage() {
               </div>
             ) : null}
 
-            <input
-              type="file"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              disabled={isExternalOnly && !officialAck}
-              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground disabled:opacity-50"
-            />
+            {isExternalOnly ? (
+              <>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  multiple
+                  onChange={(e) => setOfficialFiles(Array.from(e.target.files ?? []))}
+                  disabled={!officialAck}
+                  className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground disabled:opacity-50"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Pick one or many NCERT PDFs (e.g. <code>jemh101.pdf … jemh114.pdf</code>).
+                  The title and chapter are set automatically from each filename — no typing.
+                </p>
+                {officialFiles.length > 0 && (
+                  <p className="text-xs font-medium text-primary">
+                    {officialFiles.length} file{officialFiles.length === 1 ? '' : 's'} selected
+                  </p>
+                )}
+              </>
+            ) : (
+              <input
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground"
+              />
+            )}
 
             <button
               onClick={upload}
-              disabled={busy || (isExternalOnly && !officialAck) || !title.trim() || !file}
+              disabled={
+                busy ||
+                (isExternalOnly
+                  ? !officialAck || officialFiles.length === 0
+                  : !title.trim() || !file)
+              }
               className="mk-brand-bg inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-              {busy ? 'Uploading…' : 'Upload to storage'}
+              {busy
+                ? 'Uploading…'
+                : isExternalOnly && officialFiles.length > 1
+                  ? `Upload ${officialFiles.length} files`
+                  : 'Upload to storage'}
             </button>
             <p className="text-[11px] text-muted-foreground">
-              The file uploads directly from your browser to storage via a signed
-              URL. If you get a CORS error, add a CORS rule to the R2 bucket for
-              your app origin (PUT).
+              Files upload directly from your browser to storage via a signed URL.
+              If you get a CORS error, add a PUT CORS rule to the R2 bucket for your app origin.
             </p>
           </div>
         </div>
