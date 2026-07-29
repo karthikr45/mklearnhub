@@ -2,7 +2,15 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
-import { FileUp, Link2, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react'
+import {
+  BookOpen,
+  ChevronRight,
+  FileUp,
+  Link2,
+  Loader2,
+  ShieldCheck,
+  ShieldAlert,
+} from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -33,6 +41,26 @@ interface Asset {
   storageProvider: string | null
 }
 
+interface OverviewItem {
+  id: string
+  title: string
+  contentType: string
+  status: string
+  sourceType: string
+}
+interface OverviewSubject {
+  id: string
+  title: string
+  total: number
+  published: number
+  items: OverviewItem[]
+}
+interface ContentOverview {
+  grade: { id: string; name: string } | null
+  subjects: OverviewSubject[]
+  gradeItems: OverviewItem[]
+}
+
 interface TreeTopic { id: string; title: string }
 interface TreeChapter { id: string; title: string; topics: TreeTopic[] }
 interface TreeSubject { id: string; title: string; chapters: TreeChapter[] }
@@ -57,8 +85,16 @@ export default function ContentStudioPage() {
   const { data } = useQuery({
     queryKey: ['content-assets'],
     queryFn: async () =>
-      (await api.get<{ items: Asset[]; total: number }>('/content')).data,
+      (await api.get<{ items: Asset[]; total: number }>('/content?take=100')).data,
   })
+
+  // Grade → subject organised view of all mapped content.
+  const { data: overview } = useQuery({
+    queryKey: ['content-overview'],
+    queryFn: async () =>
+      (await api.get<ContentOverview>('/curriculum/content-overview')).data,
+  })
+  const [openSubj, setOpenSubj] = useState<string | null>(null)
 
   // Curriculum tree for the map-to-topic picker
   const { data: tree } = useQuery({
@@ -103,7 +139,10 @@ export default function ContentStudioPage() {
     }
   }
 
-  const refreshAssets = () => qc.invalidateQueries({ queryKey: ['content-assets'] })
+  const refreshAssets = () => {
+    void qc.invalidateQueries({ queryKey: ['content-assets'] })
+    void qc.invalidateQueries({ queryKey: ['content-overview'] })
+  }
   const workflow = async (id: string, action: 'review' | 'approve' | 'publish' | 'archive') => {
     try {
       await api.post(`/content/${id}/${action}`)
@@ -213,6 +252,70 @@ export default function ContentStudioPage() {
         title="Content Studio"
         description="Upload learning assets to object storage. Licensing is enforced — third-party files are blocked unless self-hosting is permitted."
       />
+
+      {overview?.grade && (
+        <div className="card-elevated mb-6 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <h2 className="text-sm font-semibold">
+              Content by subject — {overview.grade.name}
+            </h2>
+          </div>
+          {overview.gradeItems.length > 0 && (
+            <p className="mb-2 text-xs text-muted-foreground">
+              {overview.gradeItems.length} grade-wide resource
+              {overview.gradeItems.length === 1 ? '' : 's'} (syllabus, papers, portals)
+            </p>
+          )}
+          <div className="space-y-2">
+            {overview.subjects.map((s) => {
+              const open = openSubj === s.id
+              return (
+                <div key={s.id} className="rounded-lg border">
+                  <button
+                    onClick={() => setOpenSubj(open ? null : s.id)}
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent/50"
+                  >
+                    <span className="font-medium">{s.title}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                        {s.published} live
+                      </span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px]">
+                        {s.total} total
+                      </span>
+                      <ChevronRight className={`h-4 w-4 transition-transform ${open ? 'rotate-90' : ''}`} />
+                    </span>
+                  </button>
+                  {open && (
+                    <ul className="max-h-80 space-y-1 overflow-auto border-t p-2">
+                      {s.items.length === 0 ? (
+                        <li className="px-2 py-1 text-xs text-muted-foreground">No content mapped yet.</li>
+                      ) : (
+                        s.items.map((it) => (
+                          <li key={it.id} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-accent/40">
+                            <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                              {it.contentType.replace(/_/g, ' ')}
+                            </span>
+                            <span className="flex-1 truncate" title={it.title}>{it.title}</span>
+                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                              it.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' : 'bg-secondary text-secondary-foreground'
+                            }`}>
+                              {it.status === 'PUBLISHED' ? 'live' : it.status.toLowerCase()}
+                            </span>
+                            <button onClick={() => view(it.id)} className="shrink-0 text-primary hover:underline">View</button>
+                            <button onClick={() => deleteAsset(it.id, it.title)} className="shrink-0 text-muted-foreground hover:text-destructive">Delete</button>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="card-elevated p-5">

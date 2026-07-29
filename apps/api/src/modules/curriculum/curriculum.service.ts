@@ -177,6 +177,89 @@ export class CurriculumService {
     return subject
   }
 
+  /**
+   * Admin content overview, organised grade → subject. For each subject it
+   * aggregates every content asset mapped to the subject itself or any of its
+   * chapters/topics (deduped), with published/total counts — so the admin sees
+   * coverage subject-wise instead of a flat list.
+   */
+  async contentOverview(gradeId?: string) {
+    const grade = gradeId
+      ? await this.prisma.curriculumGrade.findUnique({ where: { id: gradeId } })
+      : await (async () => {
+          const board = await this.prisma.curriculumBoard.findFirst({ orderBy: { order: 'asc' } })
+          if (!board) return null
+          const year =
+            (await this.prisma.curriculumYear.findFirst({ where: { boardId: board.id, isCurrent: true } })) ??
+            (await this.prisma.curriculumYear.findFirst({ where: { boardId: board.id }, orderBy: { order: 'asc' } }))
+          if (!year) return null
+          return this.prisma.curriculumGrade.findFirst({ where: { yearId: year.id }, orderBy: { order: 'asc' } })
+        })()
+    if (!grade) return { grade: null, subjects: [], gradeItems: [] }
+
+    const subjects = await this.prisma.curriculumSubject.findMany({
+      where: { gradeId: grade.id },
+      orderBy: { order: 'asc' },
+      include: { chapters: { orderBy: { order: 'asc' }, include: { topics: true } } },
+    })
+
+    // node ref (`TYPE:id`) → owning subject id
+    const nodeToSubject = new Map<string, string>()
+    for (const s of subjects) {
+      nodeToSubject.set(`SUBJECT:${s.id}`, s.id)
+      for (const ch of s.chapters) {
+        nodeToSubject.set(`CHAPTER:${ch.id}`, s.id)
+        for (const t of ch.topics) nodeToSubject.set(`TOPIC:${t.id}`, s.id)
+      }
+    }
+    const refConds = [...nodeToSubject.keys()].map((k) => {
+      const [nodeType, nodeId] = k.split(':')
+      return { nodeType: nodeType as never, nodeId: nodeId as string }
+    })
+
+    const mappings = refConds.length
+      ? await this.prisma.curriculumContentMapping.findMany({
+          where: { OR: [...refConds, { nodeType: 'GRADE' as never, nodeId: grade.id }] },
+          include: { asset: { select: { id: true, title: true, contentType: true, status: true, sourceType: true } } },
+        })
+      : []
+
+    // group assets per subject (dedup by asset id)
+    const perSubject = new Map<string, Map<string, (typeof mappings)[number]['asset']>>()
+    const gradeAssets = new Map<string, (typeof mappings)[number]['asset']>()
+    for (const m of mappings) {
+      if (m.nodeType === ('GRADE' as never)) {
+        gradeAssets.set(m.asset.id, m.asset)
+        continue
+      }
+      const sid = nodeToSubject.get(`${m.nodeType}:${m.nodeId}`)
+      if (!sid) continue
+      if (!perSubject.has(sid)) perSubject.set(sid, new Map())
+      perSubject.get(sid)!.set(m.asset.id, m.asset)
+    }
+
+    const subjectsOut = subjects.map((s) => {
+      const assets = [...(perSubject.get(s.id)?.values() ?? [])]
+      return {
+        id: s.id,
+        title: s.title,
+        total: assets.length,
+        published: assets.filter((a) => a.status === 'PUBLISHED').length,
+        items: assets
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .map((a) => ({ id: a.id, title: a.title, contentType: a.contentType, status: a.status, sourceType: a.sourceType })),
+      }
+    })
+
+    return {
+      grade: { id: grade.id, name: grade.name },
+      subjects: subjectsOut,
+      gradeItems: [...gradeAssets.values()].map((a) => ({
+        id: a.id, title: a.title, contentType: a.contentType, status: a.status, sourceType: a.sourceType,
+      })),
+    }
+  }
+
   /** Content mapped to a curriculum node (published only, for students). */
   async getNodeContent(nodeType: string, nodeId: string, includeUnpublished = false) {
     const mappings = await this.prisma.curriculumContentMapping.findMany({

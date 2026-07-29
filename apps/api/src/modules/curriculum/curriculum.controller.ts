@@ -164,6 +164,14 @@ export class CurriculumController {
     return this.curriculum.getSubject(id)
   }
 
+  /** Admin: all mapped content organised grade → subject with counts. */
+  @Get('content-overview')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  contentOverview(@Query('gradeId') gradeId?: string) {
+    return this.curriculum.contentOverview(gradeId)
+  }
+
   @Get('nodes/:nodeType/:nodeId/content')
   nodeContent(
     @Param('nodeType') nodeType: string,
