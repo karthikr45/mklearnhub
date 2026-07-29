@@ -110,28 +110,61 @@ function TopicContent({
   return (
     <div className="space-y-2 pl-3">
       {Object.entries(bySection).map(([section, items]) => (
-        <div key={section}>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {SECTION_LABEL[section] ?? section}
-          </p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {items.map((m) => (
-              <button
-                key={m.mappingId}
-                onClick={() => onOpen(m.asset.id)}
-                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs hover:bg-accent"
-              >
-                {m.asset.contentType === 'VIDEO' ? (
-                  <PlayCircle className="h-3.5 w-3.5 text-primary" />
-                ) : (
-                  <FileText className="h-3.5 w-3.5 text-primary" />
-                )}
-                {m.asset.title}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ContentSection key={section} section={section} items={items} onOpen={onOpen} />
       ))}
+    </div>
+  )
+}
+
+/**
+ * One section (Learn/Study/Practice/Official…) of a node's content. Long lists
+ * (e.g. all official NCERT chapter PDFs) collapse behind a toggle so the
+ * syllabus stays tidy; short lists stay open.
+ */
+function ContentSection({
+  section,
+  items,
+  onOpen,
+}: {
+  section: string
+  items: MappedContent[]
+  onOpen: (assetId: string) => void
+}) {
+  const collapsible = items.length > 6
+  const [open, setOpen] = useState(!collapsible)
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => collapsible && setOpen((v) => !v)}
+        className={`flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground ${
+          collapsible ? 'hover:text-foreground' : 'cursor-default'
+        }`}
+      >
+        {collapsible && (
+          <ChevronRight className={`h-3 w-3 transition-transform ${open ? 'rotate-90' : ''}`} />
+        )}
+        {SECTION_LABEL[section] ?? section}
+        {collapsible && <span className="font-normal normal-case">({items.length})</span>}
+      </button>
+      {open && (
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {items.map((m) => (
+            <button
+              key={m.mappingId}
+              onClick={() => onOpen(m.asset.id)}
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs hover:bg-accent"
+            >
+              {m.asset.contentType === 'VIDEO' ? (
+                <PlayCircle className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <FileText className="h-3.5 w-3.5 text-primary" />
+              )}
+              {m.asset.title}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
