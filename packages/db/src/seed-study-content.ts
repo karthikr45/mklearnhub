@@ -353,43 +353,347 @@ const SCIENCE: ChapterContent[] = [
   },
 ]
 
-async function main() {
-  console.warn('📚 Seeding original Science study notes + practice (CBSE Grade 10)…')
+const MATHS: ChapterContent[] = [
+  {
+    chapter: 'Real Numbers',
+    notes: `Key points
+• Fundamental Theorem of Arithmetic: every composite number can be written as a product of primes, and this factorisation is unique (except for order).
+• Use prime factorisation to find HCF (product of smallest powers of common primes) and LCM (product of greatest powers of all primes).
+• For two positive integers: $\\text{HCF}(a,b) \\times \\text{LCM}(a,b) = a \\times b$.
+• Numbers like $\\sqrt{2},\\ \\sqrt{3},\\ \\sqrt{5}$ are irrational (proved by contradiction).
+• A rational number $\\frac{p}{q}$ (in lowest terms) has a terminating decimal only when $q$ is of the form $2^m 5^n$; otherwise it is non-terminating recurring.`,
+    mcqs: [
+      {
+        text: 'The HCF of 96 and 404 is (given $96 = 2^5\\times3$, $404 = 2^2\\times101$):',
+        options: opt('2', '4', '8', '12'),
+        correct: 'B',
+        explanation: 'Common prime factor is $2^2 = 4$, so HCF = 4.',
+      },
+      {
+        text: 'If HCF of two numbers is 9 and their LCM is 360, and one number is 45, the other is:',
+        options: opt('72', '80', '360', '405'),
+        correct: 'A',
+        explanation: 'Other $= \\frac{HCF\\times LCM}{45} = \\frac{9\\times360}{45} = 72$.',
+      },
+    ],
+  },
+  {
+    chapter: 'Polynomials',
+    notes: `Key points
+• Degree decides the type: linear (1), quadratic (2), cubic (3).
+• A zero (root) of a polynomial $p(x)$ is a value where $p(x)=0$; geometrically these are the points where the graph meets the x-axis.
+• A quadratic has at most 2 zeroes, a cubic at most 3.
+• For a quadratic $ax^2+bx+c$ with zeroes $\\alpha,\\beta$: sum $\\alpha+\\beta = -\\frac{b}{a}$ and product $\\alpha\\beta = \\frac{c}{a}$.
+• A quadratic with given zeroes: $x^2 - (\\text{sum})x + (\\text{product})$.`,
+    mcqs: [
+      {
+        text: 'The sum of the zeroes of the polynomial $x^2 - 5x + 6$ is:',
+        options: opt('−5', '5', '6', '1'),
+        correct: 'B',
+        explanation: 'Sum of zeroes $= -\\frac{b}{a} = -\\frac{-5}{1} = 5$.',
+      },
+      {
+        text: 'If the graph of a polynomial cuts the x-axis at 3 points, the number of zeroes is:',
+        options: opt('1', '2', '3', '0'),
+        correct: 'C',
+        explanation: 'The number of zeroes equals the number of points where the graph meets the x-axis.',
+      },
+    ],
+  },
+  {
+    chapter: 'Pair of Linear Equations in Two Variables',
+    notes: `Key points
+• A pair of linear equations: $a_1x+b_1y+c_1=0$ and $a_2x+b_2y+c_2=0$.
+• Nature of solutions (compare ratios):
+   – Unique solution (intersecting lines): $\\frac{a_1}{a_2} \\ne \\frac{b_1}{b_2}$.
+   – Infinitely many solutions (coincident lines): $\\frac{a_1}{a_2} = \\frac{b_1}{b_2} = \\frac{c_1}{c_2}$.
+   – No solution (parallel lines): $\\frac{a_1}{a_2} = \\frac{b_1}{b_2} \\ne \\frac{c_1}{c_2}$.
+• Algebraic methods: substitution, elimination, and cross-multiplication.`,
+    mcqs: [
+      {
+        text: 'The pair $2x+3y=5$ and $4x+6y=15$ has:',
+        options: opt('A unique solution', 'Infinitely many solutions', 'No solution', 'Exactly two solutions'),
+        correct: 'C',
+        explanation: '$\\frac{2}{4}=\\frac{3}{6}\\ne\\frac{5}{15}$, so the lines are parallel — no solution.',
+      },
+      {
+        text: 'For a consistent pair with a unique solution, the lines are:',
+        options: opt('Parallel', 'Coincident', 'Intersecting', 'Perpendicular only'),
+        correct: 'C',
+        explanation: 'A unique solution means the lines intersect at exactly one point.',
+      },
+    ],
+  },
+  {
+    chapter: 'Quadratic Equations',
+    notes: `Key points
+• Standard form: $ax^2+bx+c=0$, where $a\\ne0$.
+• Solve by factorisation, completing the square, or the quadratic formula: $x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$.
+• Discriminant $D = b^2 - 4ac$ decides the nature of roots:
+   – $D>0$: two distinct real roots.
+   – $D=0$: two equal (real) roots.
+   – $D<0$: no real roots.`,
+    mcqs: [
+      {
+        text: 'The nature of the roots of $x^2 + 4x + 4 = 0$ is:',
+        options: opt('Two distinct real roots', 'Two equal real roots', 'No real roots', 'Cannot be determined'),
+        correct: 'B',
+        explanation: '$D = 4^2 - 4(1)(4) = 0$, so the roots are real and equal.',
+      },
+      {
+        text: 'For $2x^2 - 3x + 5 = 0$, the discriminant is $D = -31$. The roots are:',
+        options: opt('Real and distinct', 'Real and equal', 'Not real', 'Both zero'),
+        correct: 'C',
+        explanation: 'Since $D<0$, the equation has no real roots.',
+      },
+    ],
+  },
+  {
+    chapter: 'Arithmetic Progressions',
+    notes: `Key points
+• An AP has a constant common difference $d$ between consecutive terms.
+• nth term: $a_n = a + (n-1)d$, where $a$ is the first term.
+• Sum of first $n$ terms: $S_n = \\frac{n}{2}\\,[2a + (n-1)d]$, or $S_n = \\frac{n}{2}(a + l)$ where $l$ is the last term.
+• These formulas solve most problems on term-finding and sums.`,
+    mcqs: [
+      {
+        text: 'The 10th term of the AP $2, 5, 8, \\dots$ is:',
+        options: opt('27', '29', '30', '32'),
+        correct: 'B',
+        explanation: '$a=2,\\ d=3$; $a_{10} = 2 + 9\\times3 = 29$.',
+      },
+      {
+        text: 'The sum of the first 20 terms of the AP $1, 2, 3, \\dots$ is:',
+        options: opt('190', '200', '210', '400'),
+        correct: 'C',
+        explanation: '$S_{20} = \\frac{20}{2}(1+20) = 10\\times21 = 210$.',
+      },
+    ],
+  },
+  {
+    chapter: 'Triangles',
+    notes: `Key points
+• Two triangles are similar if their corresponding angles are equal and corresponding sides are in the same ratio.
+• Basic Proportionality Theorem (Thales): a line drawn parallel to one side of a triangle divides the other two sides in the same ratio.
+• Similarity criteria: AA (or AAA), SSS, and SAS.
+• The ratio of areas of two similar triangles equals the square of the ratio of their corresponding sides.`,
+    mcqs: [
+      {
+        text: 'Two similar triangles have corresponding sides in the ratio 2:3. The ratio of their areas is:',
+        options: opt('2:3', '4:9', '3:2', '8:27'),
+        correct: 'B',
+        explanation: 'Ratio of areas = square of ratio of sides $= 2^2 : 3^2 = 4:9$.',
+      },
+      {
+        text: 'A line parallel to one side of a triangle divides the other two sides:',
+        options: opt('Equally', 'In the same ratio', 'Perpendicularly', 'At their midpoints only'),
+        correct: 'B',
+        explanation: 'This is the Basic Proportionality (Thales) Theorem.',
+      },
+    ],
+  },
+  {
+    chapter: 'Coordinate Geometry',
+    notes: `Key points
+• Distance between $(x_1,y_1)$ and $(x_2,y_2)$: $\\sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}$.
+• Section formula — point dividing the join in ratio $m:n$: $\\left(\\frac{mx_2+nx_1}{m+n},\\ \\frac{my_2+ny_1}{m+n}\\right)$.
+• Midpoint: $\\left(\\frac{x_1+x_2}{2},\\ \\frac{y_1+y_2}{2}\\right)$.`,
+    mcqs: [
+      {
+        text: 'The distance between the points $(0,0)$ and $(3,4)$ is:',
+        options: opt('5', '7', '1', '12'),
+        correct: 'A',
+        explanation: '$\\sqrt{3^2 + 4^2} = \\sqrt{25} = 5$.',
+      },
+      {
+        text: 'The midpoint of the segment joining $(2,3)$ and $(4,7)$ is:',
+        options: opt('(3,5)', '(6,10)', '(2,4)', '(1,2)'),
+        correct: 'A',
+        explanation: 'Midpoint $= \\left(\\frac{2+4}{2}, \\frac{3+7}{2}\\right) = (3,5)$.',
+      },
+    ],
+  },
+  {
+    chapter: 'Introduction to Trigonometry',
+    notes: `Key points
+• In a right triangle: $\\sin\\theta = \\frac{\\text{opp}}{\\text{hyp}}$, $\\cos\\theta = \\frac{\\text{adj}}{\\text{hyp}}$, $\\tan\\theta = \\frac{\\text{opp}}{\\text{adj}}$; and their reciprocals $\\csc,\\sec,\\cot$.
+• Identities: $\\sin^2\\theta + \\cos^2\\theta = 1$; $1 + \\tan^2\\theta = \\sec^2\\theta$; $1 + \\cot^2\\theta = \\csc^2\\theta$.
+• Standard values at $0^\\circ,30^\\circ,45^\\circ,60^\\circ,90^\\circ$ (e.g. $\\sin30^\\circ = \\tfrac12$, $\\cos60^\\circ = \\tfrac12$, $\\tan45^\\circ = 1$).`,
+    mcqs: [
+      {
+        text: 'The value of $\\sin 30^\\circ + \\cos 60^\\circ$ is:',
+        options: opt('0', '1', '$\\tfrac12$', '2'),
+        correct: 'B',
+        explanation: '$\\tfrac12 + \\tfrac12 = 1$.',
+      },
+      {
+        text: 'The value of $\\sin^2 45^\\circ + \\cos^2 45^\\circ$ is:',
+        options: opt('0', '$\\tfrac12$', '1', '2'),
+        correct: 'C',
+        explanation: 'By the identity $\\sin^2\\theta + \\cos^2\\theta = 1$.',
+      },
+    ],
+  },
+  {
+    chapter: 'Some Applications of Trigonometry',
+    notes: `Key points
+• Trigonometry is used to find heights and distances that cannot be measured directly.
+• Angle of elevation: the angle above the horizontal when you look up at an object.
+• Angle of depression: the angle below the horizontal when you look down.
+• Model the situation as a right triangle and use $\\sin,\\cos,\\tan$ of the known angle.`,
+    mcqs: [
+      {
+        text: 'A tower casts a shadow such that the angle of elevation of the sun is $45^\\circ$. The height of the tower compared to the shadow length is:',
+        options: opt('Half', 'Equal', 'Double', '$\\sqrt{3}$ times'),
+        correct: 'B',
+        explanation: '$\\tan45^\\circ = 1 = \\frac{\\text{height}}{\\text{shadow}}$, so they are equal.',
+      },
+      {
+        text: 'The angle formed below the horizontal while looking down at an object is called the angle of:',
+        options: opt('Elevation', 'Depression', 'Incidence', 'Reflection'),
+        correct: 'B',
+        explanation: 'Looking downward gives the angle of depression.',
+      },
+    ],
+  },
+  {
+    chapter: 'Circles',
+    notes: `Key points
+• A tangent to a circle touches it at exactly one point.
+• The tangent at any point of a circle is perpendicular to the radius through the point of contact.
+• The lengths of the two tangents drawn from an external point to a circle are equal.
+• From a point inside the circle no tangent can be drawn; from a point on the circle exactly one; from an external point exactly two.`,
+    mcqs: [
+      {
+        text: 'The number of tangents that can be drawn to a circle from an external point is:',
+        options: opt('0', '1', '2', 'Infinite'),
+        correct: 'C',
+        explanation: 'Exactly two tangents can be drawn from an external point.',
+      },
+      {
+        text: 'The angle between a tangent to a circle and the radius at the point of contact is:',
+        options: opt('$45^\\circ$', '$60^\\circ$', '$90^\\circ$', '$180^\\circ$'),
+        correct: 'C',
+        explanation: 'The tangent is perpendicular to the radius at the point of contact.',
+      },
+    ],
+  },
+  {
+    chapter: 'Areas Related to Circles',
+    notes: `Key points
+• Circumference of a circle $= 2\\pi r$; area $= \\pi r^2$.
+• Length of an arc of angle $\\theta$: $\\frac{\\theta}{360^\\circ}\\times 2\\pi r$.
+• Area of a sector of angle $\\theta$: $\\frac{\\theta}{360^\\circ}\\times \\pi r^2$.
+• Area of a segment = area of sector − area of the corresponding triangle.
+• Use $\\pi = \\frac{22}{7}$ or $3.14$ as directed.`,
+    mcqs: [
+      {
+        text: 'The area of a circle of radius 7 cm (take $\\pi=\\tfrac{22}{7}$) is:',
+        options: opt('44 cm²', '77 cm²', '154 cm²', '308 cm²'),
+        correct: 'C',
+        explanation: '$\\pi r^2 = \\frac{22}{7}\\times7\\times7 = 154\\ \\text{cm}^2$.',
+      },
+      {
+        text: 'The area of a sector of angle $90^\\circ$ of a circle is what fraction of the whole circle?',
+        options: opt('$\\tfrac12$', '$\\tfrac14$', '$\\tfrac13$', '$\\tfrac18$'),
+        correct: 'B',
+        explanation: '$\\frac{90}{360} = \\frac14$ of the circle.',
+      },
+    ],
+  },
+  {
+    chapter: 'Surface Areas and Volumes',
+    notes: `Key points
+• Cuboid: volume $= lbh$; cube: volume $= a^3$.
+• Cylinder: volume $= \\pi r^2 h$; curved surface area $= 2\\pi r h$.
+• Cone: volume $= \\frac13\\pi r^2 h$; curved surface area $= \\pi r l$ (slant height $l=\\sqrt{r^2+h^2}$).
+• Sphere: volume $= \\frac43\\pi r^3$; surface area $= 4\\pi r^2$. Hemisphere volume $= \\frac23\\pi r^3$.
+• For combined solids, add the relevant surface areas / volumes; when one shape is recast into another, volume stays the same.`,
+    mcqs: [
+      {
+        text: 'The volume of a sphere of radius $r$ is:',
+        options: opt('$\\tfrac43\\pi r^3$', '$4\\pi r^2$', '$\\tfrac13\\pi r^2 h$', '$\\pi r^2 h$'),
+        correct: 'A',
+        explanation: 'Volume of a sphere $= \\frac43\\pi r^3$.',
+      },
+      {
+        text: 'A cone and a cylinder have the same radius and height. The ratio of their volumes is:',
+        options: opt('1:1', '1:2', '1:3', '3:1'),
+        correct: 'C',
+        explanation: 'Cone volume $=\\frac13\\pi r^2h$, cylinder $=\\pi r^2h$, so ratio $1:3$.',
+      },
+    ],
+  },
+  {
+    chapter: 'Statistics',
+    notes: `Key points
+• Mean of grouped data by the direct method: $\\bar{x} = \\frac{\\sum f_i x_i}{\\sum f_i}$ (also assumed-mean and step-deviation methods).
+• Median of grouped data: $l + \\frac{\\frac{n}{2} - cf}{f}\\times h$.
+• Mode of grouped data: $l + \\frac{f_1 - f_0}{2f_1 - f_0 - f_2}\\times h$.
+• Empirical relationship: $\\text{Mode} = 3\\,\\text{Median} - 2\\,\\text{Mean}$.`,
+    mcqs: [
+      {
+        text: 'If the mean is 30 and the median is 32, the mode (by the empirical relation) is:',
+        options: opt('34', '36', '30', '28'),
+        correct: 'B',
+        explanation: 'Mode $= 3(32) - 2(30) = 96 - 60 = 36$.',
+      },
+      {
+        text: 'The mean of the first five natural numbers $1,2,3,4,5$ is:',
+        options: opt('2', '3', '4', '5'),
+        correct: 'B',
+        explanation: 'Mean $= \\frac{1+2+3+4+5}{5} = \\frac{15}{5} = 3$.',
+      },
+    ],
+  },
+  {
+    chapter: 'Probability',
+    notes: `Key points
+• Theoretical probability: $P(E) = \\frac{\\text{number of favourable outcomes}}{\\text{total number of outcomes}}$.
+• Probability always lies between 0 and 1: $0 \\le P(E) \\le 1$. A sure event has probability 1, an impossible event 0.
+• The complement rule: $P(\\text{not } E) = 1 - P(E)$.
+• Sum of probabilities of all elementary outcomes of an experiment is 1.`,
+    mcqs: [
+      {
+        text: 'A die is thrown once. The probability of getting an even number is:',
+        options: opt('$\\tfrac16$', '$\\tfrac13$', '$\\tfrac12$', '$\\tfrac23$'),
+        correct: 'C',
+        explanation: 'Even numbers $\\{2,4,6\\}$ give $\\frac{3}{6} = \\frac12$.',
+      },
+      {
+        text: 'If $P(E) = 0.35$, then $P(\\text{not } E)$ is:',
+        options: opt('0.35', '0.65', '1.35', '0'),
+        correct: 'B',
+        explanation: '$P(\\text{not }E) = 1 - 0.35 = 0.65$.',
+      },
+    ],
+  },
+]
 
+const SUBJECTS: { code: string; label: string; data: ChapterContent[] }[] = [
+  { code: 'SCIENCE', label: 'Science', data: SCIENCE },
+  { code: 'MATHEMATICS', label: 'Mathematics', data: MATHS },
+]
+
+async function seedSubject(code: string, label: string, data: ChapterContent[]) {
   const subject = await prisma.curriculumSubject.findFirst({
-    where: { code: 'SCIENCE', grade: { name: 'Grade 10' } },
+    where: { code, grade: { name: 'Grade 10' } },
     include: { chapters: true },
   })
   if (!subject) {
-    console.error('✗ Science subject not found. Run `pnpm db:seed:curriculum` first.')
-    return
+    console.warn(`  – ${label}: subject not found (run db:seed:curriculum first) — skipped`)
+    return { notes: 0, q: 0 }
   }
-
-  // Idempotent cleanup of previously-seeded study content.
-  const oldNotes = await prisma.contentAsset.findMany({
-    where: { sourceName: NOTES_SOURCE },
-    select: { id: true },
-  })
-  if (oldNotes.length) {
-    await prisma.curriculumContentMapping.deleteMany({
-      where: { assetId: { in: oldNotes.map((a) => a.id) } },
-    })
-    await prisma.contentAsset.deleteMany({ where: { sourceName: NOTES_SOURCE } })
-  }
-  await prisma.assessmentQuestion.deleteMany({ where: { createdById: QUESTION_MARK } })
-
   const byTitle = new Map(subject.chapters.map((c) => [c.title, c.id]))
   let notesCount = 0
   let qCount = 0
 
-  for (const item of SCIENCE) {
+  for (const item of data) {
     const chapterId = byTitle.get(item.chapter)
     if (!chapterId) {
-      console.warn(`  – skipped (chapter not found): ${item.chapter}`)
+      console.warn(`  – ${label}: chapter not found — ${item.chapter}`)
       continue
     }
-
-    // Revision notes → content asset mapped to the chapter (STUDY section).
     const note = await prisma.contentAsset.create({
       data: {
         title: `${item.chapter} — Revision Notes`,
@@ -408,17 +712,10 @@ async function main() {
       },
     })
     await prisma.curriculumContentMapping.create({
-      data: {
-        assetId: note.id,
-        nodeType: 'CHAPTER',
-        nodeId: chapterId,
-        section: 'STUDY',
-        role: 'REVISION_NOTES',
-      },
+      data: { assetId: note.id, nodeType: 'CHAPTER', nodeId: chapterId, section: 'STUDY', role: 'REVISION_NOTES' },
     })
     notesCount++
 
-    // Practice MCQs → question bank + curriculum mapping (chapter-level).
     for (const m of item.mcqs) {
       await prisma.assessmentQuestion.create({
         data: {
@@ -436,9 +733,35 @@ async function main() {
       qCount++
     }
   }
+  console.warn(`  ✓ ${label}: ${notesCount} chapters of notes + ${qCount} practice questions`)
+  return { notes: notesCount, q: qCount }
+}
 
-  console.warn(`✅ Seeded ${notesCount} chapters of Science notes + ${qCount} practice questions.`)
-  console.warn('   Students see these on My Syllabus → Science → any chapter (Study + Practice).')
+async function main() {
+  console.warn('📚 Seeding original study notes + practice (CBSE Grade 10)…')
+
+  // Idempotent cleanup of previously-seeded study content (all subjects).
+  const oldNotes = await prisma.contentAsset.findMany({
+    where: { sourceName: NOTES_SOURCE },
+    select: { id: true },
+  })
+  if (oldNotes.length) {
+    await prisma.curriculumContentMapping.deleteMany({
+      where: { assetId: { in: oldNotes.map((a) => a.id) } },
+    })
+    await prisma.contentAsset.deleteMany({ where: { sourceName: NOTES_SOURCE } })
+  }
+  await prisma.assessmentQuestion.deleteMany({ where: { createdById: QUESTION_MARK } })
+
+  let totalN = 0
+  let totalQ = 0
+  for (const s of SUBJECTS) {
+    const r = await seedSubject(s.code, s.label, s.data)
+    totalN += r.notes
+    totalQ += r.q
+  }
+  console.warn(`✅ Done: ${totalN} chapters of notes + ${totalQ} practice questions across ${SUBJECTS.length} subjects.`)
+  console.warn('   Students see these on My Syllabus → subject → any chapter (Study + Practice).')
 }
 
 main()
