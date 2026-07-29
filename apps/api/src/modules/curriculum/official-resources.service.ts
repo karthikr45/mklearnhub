@@ -171,7 +171,9 @@ export class OfficialResourcesService {
   }
 
   // ── Node resolution (read-only; never creates curriculum nodes) ──
-  private async resolveNode(entry: OfficialEntry): Promise<ResolvedNode | null> {
+  private async resolveNode(
+    entry: { boardCode: string; subject?: string; chapter?: string },
+  ): Promise<ResolvedNode | null> {
     const board = await this.prisma.curriculumBoard.findUnique({
       where: { code: entry.boardCode },
     })
@@ -578,6 +580,56 @@ export class OfficialResourcesService {
       out.push({ book: b.book, published })
     }
     return out
+  }
+
+  /**
+   * Recognise an NCERT filename (e.g. jemh107.pdf, jesc101.pdf, jess401.pdf,
+   * jhks105.pdf, jemh1an.pdf) and resolve which subject/chapter it belongs to,
+   * so an uploaded official file can auto-map to the right curriculum node.
+   * Returns { recognized:false } if the filename isn't a known NCERT code.
+   */
+  async resolveNcertFile(filename: string) {
+    const base = (filename || '').trim().toLowerCase().replace(/\.pdf$/, '')
+    if (base.length < 6) return { recognized: false as const }
+    const code = base.slice(0, 5)
+    const suffix = base.slice(5)
+    const per = NCERT_PER_CHAPTER.find((b) => b.code === code)
+    const sub = NCERT_SUBJECT_LEVEL.find((b) => b.code === code)
+    const book = per ?? sub
+    if (!book) return { recognized: false as const }
+
+    const subject = book.subject
+    const n = /^\d{1,2}$/.test(suffix) ? parseInt(suffix, 10) : null
+    let chapterTitle: string | null = null
+    let suggestedTitle: string
+
+    if (per && n && n >= 1 && n <= per.chapters.length) {
+      chapterTitle = per.chapters[n - 1]!
+      suggestedTitle = `NCERT — ${chapterTitle}`
+    } else if (n) {
+      suggestedTitle = `NCERT ${book.book} — Chapter ${n}`
+    } else {
+      const special: Record<string, string> = {
+        ps: 'Prelims', a1: 'Appendix 1', a2: 'Appendix 2', an: 'Answers',
+        dd: 'Complete book', gg: 'Complete book',
+      }
+      suggestedTitle = `NCERT ${book.book} — ${special[suffix] ?? suffix.toUpperCase()}`
+    }
+
+    const node = await this.resolveNode({
+      boardCode: 'CBSE',
+      subject,
+      ...(chapterTitle ? { chapter: chapterTitle } : {}),
+    })
+    return {
+      recognized: true as const,
+      subject,
+      book: book.book,
+      chapterTitle,
+      suggestedTitle,
+      nodeType: node?.nodeType ?? null,
+      nodeId: node?.nodeId ?? null,
+    }
   }
 
   /**

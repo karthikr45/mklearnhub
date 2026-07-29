@@ -227,10 +227,39 @@ export default function ContentStudioPage() {
       // 3) Confirm the object landed
       await api.post(`/content/${presign.assetId}/complete`, { fileSize: file.size })
 
-      toast.success('Uploaded to storage ✓')
+      // 4) For official NCERT files, auto-map to the recognised chapter + publish
+      let mapped = ''
+      if (isExternalOnly) {
+        try {
+          const { data: rec } = await api.get<{
+            recognized: boolean
+            subject?: string
+            chapterTitle?: string | null
+            nodeType?: string | null
+            nodeId?: string | null
+          }>(`/curriculum/official/ncert-file?name=${encodeURIComponent(file.name)}`)
+          if (rec.recognized && rec.nodeId && rec.nodeType) {
+            await api.post(`/content/${presign.assetId}/mappings`, {
+              nodeType: rec.nodeType,
+              nodeId: rec.nodeId,
+              section: 'OFFICIAL',
+              role: 'OFFICIAL_TEXTBOOK',
+            })
+            await api.post(`/content/${presign.assetId}/publish`).catch(() => {})
+            mapped = rec.chapterTitle
+              ? ` → mapped to ${rec.subject}: ${rec.chapterTitle}`
+              : ` → ${rec.subject}`
+          }
+        } catch {
+          /* recognition is best-effort; manual mapping still available */
+        }
+      }
+
+      toast.success(`Uploaded to storage ✓${mapped}`)
       setTitle('')
       setFile(null)
       void qc.invalidateQueries({ queryKey: ['content-assets'] })
+      void qc.invalidateQueries({ queryKey: ['content-overview'] })
     } catch (err) {
       const msg =
         err instanceof AxiosError

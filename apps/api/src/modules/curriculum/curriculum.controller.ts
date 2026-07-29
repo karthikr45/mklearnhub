@@ -244,6 +244,14 @@ export class CurriculumController {
     return this.official.importCsv(user.sub, dto.csv, { verify: dto.verify ?? true })
   }
 
+  /** Recognise an NCERT filename → which subject/chapter it maps to. */
+  @Get('official/ncert-file')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ORG_ADMIN')
+  recogniseNcertFile(@Query('name') name: string) {
+    return this.official.resolveNcertFile(name ?? '')
+  }
+
   /** Attach one official external link to a specific curriculum node. */
   @Post('nodes/:nodeType/:nodeId/official')
   @UseGuards(RolesGuard)
