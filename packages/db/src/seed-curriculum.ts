@@ -149,10 +149,10 @@ async function main() {
     ['Statistics & Probability', ['Statistics', 'Probability']],
   ]
   let mo = 0
+  let mch = 0 // global chapter order (NCERT sequence), not per-unit
   for (const [unitTitle, chapters] of mathUnits) {
     const unit = await findOrCreateUnit(maths.id, slugCode(unitTitle), unitTitle, mo++)
-    let co = 0
-    for (const ch of chapters) await chapter(maths.id, ch, co++, { unitId: unit.id })
+    for (const ch of chapters) await chapter(maths.id, ch, mch++, { unitId: unit.id })
   }
 
   // ── Science — plain chapters; first chapter is the pilot ──
@@ -255,10 +255,10 @@ async function main() {
     ['Economics — Understanding Economic Development', ['Development', 'Sectors of the Indian Economy', 'Money and Credit', 'Globalisation and the Indian Economy', 'Consumer Rights']],
   ]
   let bo = 0
+  let sch = 0 // global chapter order across the four SST books
   for (const [bookTitle, chapters] of socialBooks) {
     const book = await findOrCreateBook(social.id, bookTitle, bo++)
-    let co = 0
-    for (const ch of chapters) await chapter(social.id, ch, co++, { bookId: book.id })
+    for (const ch of chapters) await chapter(social.id, ch, sch++, { bookId: book.id })
   }
 
   // ── English (Language & Literature) — two prescribed books ──
