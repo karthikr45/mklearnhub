@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, X } from 'lucide-react'
+import { ExternalLink, FileText, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { VideoPlayer } from '@/components/courses/VideoPlayer'
@@ -24,6 +24,7 @@ interface ContentDetail {
   sourceUrl?: string | null
   deliveryUrl?: string | null
   attributionText?: string | null
+  selfHosted?: boolean
 }
 
 /** Interactive MCQ rendered from an asset's body. */
@@ -86,34 +87,36 @@ export function ContentViewer({
 
   const render = () => {
     if (isLoading || !data) return <p className="text-sm text-muted-foreground">Loading…</p>
-    const { contentType, deliveryUrl, body } = data
+    const { contentType, deliveryUrl, body, selfHosted } = data
     if (body?.options?.length) return <Mcq body={body} />
     if (deliveryUrl) {
       if (contentType === 'VIDEO') return <VideoPlayer src={deliveryUrl} />
       if (contentType === 'IMAGE' || contentType === 'DIAGRAM')
         return <img src={deliveryUrl} alt={data.title} className="mx-auto max-h-[70vh] rounded-lg" />
-      if (contentType === 'PDF')
+      if (contentType === 'PDF') {
+        // Our own PDFs embed inline; external official PDFs (NCERT/CBSE) block
+        // iframing, so show a clean open-in-new-tab card instead of a dead frame.
+        if (selfHosted)
+          return <iframe src={deliveryUrl} title={data.title} className="h-[70vh] w-full rounded-lg border" />
         return (
-          <div>
+          <div className="rounded-xl border border-dashed p-8 text-center">
+            <FileText className="mx-auto mb-3 h-10 w-10 text-primary" />
+            <p className="mb-1 font-medium">{data.title}</p>
+            <p className="mx-auto mb-4 max-w-sm text-sm text-muted-foreground">
+              This is the official NCERT chapter PDF. It opens on the NCERT site
+              in a new tab (official sources don’t allow embedding).
+            </p>
             <a
               href={deliveryUrl}
               target="_blank"
               rel="noreferrer noopener"
-              className="mk-brand-bg mb-3 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium text-white"
+              className="mk-brand-bg inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-medium text-white"
             >
-              <ExternalLink className="h-4 w-4" /> Open PDF in a new tab
+              <ExternalLink className="h-4 w-4" /> Open the chapter PDF
             </a>
-            <iframe
-              src={deliveryUrl}
-              title={data.title}
-              className="h-[70vh] w-full rounded-lg border"
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              If the preview stays blank, use “Open PDF in a new tab” above — some
-              official sources block inline embedding.
-            </p>
           </div>
         )
+      }
       return (
         <a
           href={deliveryUrl}

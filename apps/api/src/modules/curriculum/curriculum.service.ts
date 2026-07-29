@@ -97,6 +97,9 @@ export class CurriculumService {
       attributionRequired: asset.attributionRequired,
       attributionText: asset.attributionText,
       deliveryUrl,
+      // Our own files (in object storage) embed fine; external official links
+      // (NCERT/CBSE) usually block iframing, so the UI opens them in a new tab.
+      selfHosted: Boolean(asset.storageKey),
     }
   }
 
