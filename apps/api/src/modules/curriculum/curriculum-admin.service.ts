@@ -51,6 +51,8 @@ interface NodeBody {
   status?: string
   unitId?: string | null
   bookId?: string | null
+  level?: number
+  isCurrent?: boolean
 }
 
 /**
@@ -96,6 +98,10 @@ export class CurriculumAdminService {
       if (body.unitId) data.unitId = body.unitId
       if (body.bookId) data.bookId = body.bookId
     }
+    // A grade's class level lets a student's "Class 10" resolve to it.
+    if (type === 'grade' && body.level != null) data.level = body.level
+    // Mark a newly-created academic year as the current one for its board.
+    if (type === 'year' && body.isCurrent) data.isCurrent = true
     const row = await this.model(type).create({ data })
     await this.audit.log({
       userId,

@@ -5,6 +5,7 @@ import { BookOpen, ChevronRight, Download, FileUp, GraduationCap, Layers, Pencil
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { CreateCurriculumPanel } from '@/components/curriculum/CreateCurriculumPanel'
 import { OfficialResourcesPanel } from '@/components/curriculum/OfficialResourcesPanel'
 import { QuestionManager } from '@/components/curriculum/QuestionManager'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -269,7 +270,11 @@ export default function CurriculumPage() {
         description="Browse the curriculum tree. Content you upload in Content Studio maps to these chapters and topics."
       />
 
-      <ImportPanel />
+      <CreateCurriculumPanel />
+
+      <div className="mt-4">
+        <ImportPanel />
+      </div>
 
       <div className="mt-4">
         <OfficialResourcesPanel />

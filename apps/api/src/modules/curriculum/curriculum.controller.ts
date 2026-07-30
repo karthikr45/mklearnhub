@@ -42,6 +42,8 @@ class CreateNodeDto {
   @IsOptional() @IsInt() order?: number
   @IsOptional() @IsString() unitId?: string
   @IsOptional() @IsString() bookId?: string
+  @IsOptional() @IsInt() level?: number
+  @IsOptional() isCurrent?: boolean
 }
 
 class UpdateNodeDto {
